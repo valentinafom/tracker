@@ -973,11 +973,7 @@ function buildInitialState() {
     transport: DEFAULT_TRANSPORT.map(s => ({ ...s })),
     trip: { city: '', start: '', end: '', cities: [] },
     weather: null,
-    bags: {
-      hold:     { icon: '🧳', label: 'Багаж',       weight: '30 кг' },
-      cabin:    { icon: '🎒', label: 'Кабинный',     weight: '8 кг'  },
-      personal: { icon: '👜', label: 'Личная сумка', weight: '4 кг'  },
-    },
+    bags: null,
   };
   sections.forEach(s => {
     st.sections.push({
