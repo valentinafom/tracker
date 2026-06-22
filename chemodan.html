@@ -2683,10 +2683,13 @@ function updateStats() {
   let total = 0, checked = 0;
   const bt = {}, bc = {};
   Object.keys(state.bags || BAG_DEFAULTS).forEach(id => { bt[id] = 0; bc[id] = 0; });
-  state.sections.forEach(s => s.items.forEach(i => {
-    total++; if (i.checked) checked++;
-    if (i.bag && bt.hasOwnProperty(i.bag)) { bt[i.bag]++; if (i.checked) bc[i.bag]++; }
-  }));
+  state.sections.forEach(s => {
+    if (s.type === 'action') return;
+    s.items.forEach(i => {
+      total++; if (i.checked) checked++;
+      if (i.bag && bt.hasOwnProperty(i.bag)) { bt[i.bag]++; if (i.checked) bc[i.bag]++; }
+    });
+  });
   const hasItems = state.sections.some(s => s.type !== 'action' && !(s.isDefault && s.items.length === 0));
   document.getElementById('items-stats').style.display = hasItems ? '' : 'none';
   document.getElementById('items-reset').style.display = hasItems ? '' : 'none';
@@ -2977,18 +2980,8 @@ function runQuickAction(tab, index) {
 
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState !== 'visible') return;
-  if (document.querySelector('.edit-overlay.show, .add-overlay.show, .add-section-overlay.show, .bag-view-overlay.show')) return;
-  const saved = JSON.parse(localStorage.getItem('mytrip4') || 'null');
-  if (saved && JSON.stringify(saved) !== JSON.stringify(state)) {
-    state = loadState();
-    render();
-    renderTransportBar();
-    renderLuggageBar();
-    renderHeaderSub();
-    if (document.getElementById('tab-events')?.classList.contains('active')) renderEvents();
-    const activeTab = ['items','tasks','bags','events'].find(t => document.getElementById('tab-'+t)?.classList.contains('active'));
-    if (activeTab) renderQuickActions(activeTab);
-  }
+  const activeTab = ['items','tasks','bags','events'].find(t => document.getElementById('tab-'+t)?.classList.contains('active'));
+  if (activeTab) renderQuickActions(activeTab);
 });
 
 </script>
