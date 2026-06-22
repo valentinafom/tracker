@@ -1,0 +1,2937 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Чемодан">
+<meta name="theme-color" content="#f5f5f7">
+<link rel="manifest" href="manifest.json">
+<title>Чемодан</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f5f5f7;      --surface: #ffffff;   --surface2: #f2f2f7;
+    --border: #e5e5ea;  --border2: #d1d1d6;
+    --text: #1c1c1e;    --text2: #636366;     --text3: #8e8e93;
+    --accent: #4fc8a0;  --blue: #007aff;      --purple: #a78bfa;
+    --radius: 14px;     --radius-sm: 8px;
+  }
+  body { font-family: -apple-system, 'SF Pro Text', 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100dvh; padding: env(safe-area-inset-top, 0) 16px calc(128px + env(safe-area-inset-bottom, 0)) 16px; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  .tab-header { margin-bottom: 20px; padding-top: 8px; }
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: calc(58px + env(safe-area-inset-bottom, 0)); padding-bottom: env(safe-area-inset-bottom, 0); background: #f9f9fb; border-top: 1px solid var(--border); display: flex; z-index: 999; }
+  .bnav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: none; background: none; cursor: pointer; padding: 8px 0; color: var(--text3); -webkit-tap-highlight-color: transparent; transition: color 0.15s; }
+  .bnav-btn.active { color: var(--accent); }
+  .bnav-icon { font-size: 22px; line-height: 1; }
+  .bnav-label { font-size: 12px; font-weight: 500; }
+
+  .quick-actions {
+  position: fixed;
+  left: 10px;
+  right: 10px;
+  bottom: calc(58px + env(safe-area-inset-bottom, 0));
+  z-index: 998;
+
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+
+  background: rgba(249, 249, 251, 0.94);
+  border: 1px solid var(--border);
+  border-radius: 16px 16px 0 0;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.quick-actions::-webkit-scrollbar {
+  display: none;
+}
+body:has(.edit-overlay.show),
+body:has(.add-overlay.show),
+body:has(.add-section-overlay.show),
+body:has(.bag-view-overlay.show) {
+  .quick-actions { display: none; }
+}
+
+.qa-btn {
+  min-height: 42px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border2);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 500;
+  font-family: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.qa-btn:active {
+  transform: scale(0.98);
+  background: var(--surface2);
+}
+
+.qa-btn.primary {
+  background: #87CEFA;
+  border-color: var(--accent);
+  color: #0f1117;
+}
+
+.qa-btn.ghost {
+  background: var(--surface2);
+  color: var(--text2);
+}
+
+@media print {
+  .quick-actions {
+    display: none !important;
+  }
+}
+
+  .header { margin-bottom: 24px; }
+  .header-title { font-family: 'Unbounded', sans-serif; font-size: 20px; font-weight: 600; color: var(--text); letter-spacing: -0.5px; margin-bottom: 4px; }
+  .header-sub { font-size: 12px; color: var(--text2); line-height: 1.6; min-height: 16px; }
+  .trip-edit-hint { font-size: 12px; color: var(--text3); cursor: pointer; }
+  .trip-edit-hint:hover { color: var(--text2); }
+
+  .transport-collapse { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 16px; overflow: hidden; }
+  .transport-collapse-header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--surface); cursor: pointer; user-select: none; }
+  .transport-collapse-header:hover { background: var(--surface2); }
+  .transport-collapse-title { font-size: 13px; font-weight: 500; color: var(--text); flex: 1; }
+  .transport-collapse-chevron { color: var(--text3); font-size: 11px; transition: transform 0.2s; }
+  .transport-collapse-body { display: none; padding: 10px 10px 4px; border-top: 1px solid var(--border); }
+  .transport-collapse-body.open { display: block; }
+  .transport-bar { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  .transport-card { flex: 1; min-width: 70px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 6px 10px 18px; cursor: pointer; transition: background 0.1s; position: relative; text-align: center; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-start; gap: 2px; }
+  .transport-card:hover { background: var(--surface2); }
+  .trip-city-row { display: flex; align-items: center; gap: 6px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .trip-city-row:last-child { border-bottom: none; }
+  .trip-city-row-name { flex: 1; font-size: 13px; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .trip-date-input { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 10px; padding: 3px 4px; font-family: 'Inter', sans-serif; outline: none; width: 96px; }
+  .trip-date-input:focus { border-color: var(--accent); }
+  .trip-city-del { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 16px; padding: 0 2px; flex-shrink: 0; line-height: 1; }
+  .trip-city-del:hover { color: #e06fa0; }
+  .trip-cities-list { margin-bottom: 8px; }
+  .tz-btn { width: 100%; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius-sm); color: var(--text); font-size: 12px; padding: 8px 10px; font-family: 'Inter', sans-serif; cursor: pointer; text-align: left; }
+  .tz-btn:hover { border-color: var(--accent); }
+  .tz-overlay { display: none; position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
+  .tz-overlay.show { display: flex; }
+  .tz-modal { background: var(--surface); border-radius: var(--radius); width: 100%; max-width: 420px; max-height: 80vh; display: flex; flex-direction: column; border: 1px solid var(--border2); }
+  .tz-header { padding: 14px 16px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .tz-header h3 { font-family: 'Unbounded', sans-serif; font-size: 13px; font-weight: 500; margin-bottom: 8px; }
+  .tz-search { width: 100%; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius-sm); color: var(--text); font-size: 13px; padding: 8px 10px; font-family: 'Inter', sans-serif; outline: none; box-sizing: border-box; }
+  .tz-search:focus { border-color: var(--accent); }
+  .tz-list { overflow-y: auto; flex: 1; }
+  .tz-group { font-size: 10px; color: var(--text3); padding: 8px 14px 3px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; background: var(--surface2); position: sticky; top: 0; }
+  .tz-item { display: flex; align-items: center; justify-content: space-between; padding: 9px 14px; cursor: pointer; transition: background 0.1s; border-bottom: 1px solid var(--border); }
+  .tz-item:last-child { border-bottom: none; }
+  .tz-item:hover { background: var(--surface2); }
+  .tz-item.detected { background: rgba(79,200,160,0.07); }
+  .tz-city { font-size: 13px; color: var(--text); }
+  .tz-country { font-size: 11px; color: var(--text3); margin-top: 1px; }
+  .tz-gmt { font-family: 'Unbounded', sans-serif; font-size: 11px; font-weight: 600; color: var(--accent); flex-shrink: 0; margin-left: 10px; }
+  .tc-route { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 100%; }
+  .tc-end { display: flex; flex-direction: column; align-items: center; width: 100%; min-width: 0; }
+  .tc-arrow { font-size: 12px; color: var(--text3); line-height: 1; }
+  .tc-time { font-family: 'Unbounded', sans-serif; font-size: 14px; font-weight: 600; line-height: 1; }
+  .tc-date { font-size: 12px; color: var(--text3); min-height: 1.3em; }
+  .tc-code { font-size: 12px; font-weight: 500; color: var(--text2); }
+  .tc-label { font-size: 12px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; margin-top: 4px; min-height: 1.3em; }  
+  .transport-card-edit { position: absolute; top: 6px; right: 7px; font-size: 12px; color: var(--text3); line-height: 1; }
+  .transport-card-drag { position: absolute; top: 6px; left: 6px; background: none; border: none; font-size: 11px; color: var(--border2); cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; padding: 0; line-height: 1; }
+  .transport-card-drag:hover { color: var(--text3); }
+  .transport-card-add { width: 100%; background: none; border: 1px dashed var(--border); border-radius: var(--radius-sm); padding: 5px 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text3); font-size: 11px; gap: 5px; transition: all 0.1s; }
+  .transport-card-add:hover { background: var(--surface2); border-color: var(--accent); color: var(--accent); }
+  .flight-del-btn { padding: 9px 12px; background: none; border: 1px solid #e06fa044; border-radius: var(--radius-sm); color: #e06fa0; font-size: 13px; cursor: pointer; font-family: 'Inter', sans-serif; flex-shrink: 0; }
+  .flight-del-btn:hover { background: #fdf2f5; }
+  .flight-label { font-size: 10px; color: var(--text3); margin-bottom: 3px; }
+  .flight-val { font-size: 13px; font-weight: 500; color: var(--text); }
+  .flight-note { font-size: 10px; color: var(--text2); margin-top: 2px; }
+
+  .luggage-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
+  .lug { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 6px; cursor: pointer; transition: background 0.4s; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
+  .lug-add { width: 100%; background: none; border: 1px dashed var(--border); border-radius: var(--radius-sm); padding: 5px 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text3); font-size: 11px; transition: all 0.1s; }
+  .lug-add:hover { background: var(--surface2); border-color: var(--accent); color: var(--accent); }
+  .lug:hover { filter: brightness(0.97); }
+  .bag-view-overlay { display: none; position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0,0,0,0.55); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
+  .bag-view-overlay.show { display: flex; }
+  .bag-view-modal { background: var(--surface); border-radius: var(--radius); width: 100%; max-width: 480px; max-height: 82vh; display: flex; flex-direction: column; }
+  .bv-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 16px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .bv-title { font-family: 'Unbounded', sans-serif; font-size: 13px; font-weight: 500; color: var(--text); }
+  .bv-stats { font-size: 11px; color: var(--text3); margin-top: 3px; }
+  .bv-close { background: none; border: none; color: var(--text3); font-size: 18px; cursor: pointer; padding: 4px 6px; border-radius: 6px; }
+  .bv-close:hover { background: var(--surface2); }
+  .bv-content { overflow-y: auto; flex: 1; padding: 6px 0 16px; }
+  .bv-section-title { display: flex; justify-content: space-between; align-items: center; padding: 8px 14px 3px; font-size: 10px; font-weight: 600; color: var(--text3); letter-spacing: 0.4px; text-transform: uppercase; }
+  .bv-count { background: var(--surface2); border-radius: 99px; padding: 1px 7px; font-size: 10px; }
+  .bv-item { display: flex; align-items: center; gap: 10px; padding: 8px 14px; cursor: pointer; transition: background 0.1s; }
+  .bv-item:hover { background: var(--surface2); }
+  .bv-item.checked { opacity: 0.4; }
+  .bv-item.checked .checkbox { background: var(--accent); border-color: var(--accent); }
+  .bv-item.checked .checkmark { display: block; }
+  .bv-item.checked .bv-name { text-decoration: line-through; color: var(--text3); }
+  .bv-name { font-size: 13px; color: var(--text); flex: 1; line-height: 1.4; }
+  .bv-del-btn { background: none; border: none; color: var(--text3); font-size: 11px; cursor: pointer; padding: 2px 5px; border-radius: 4px; flex-shrink: 0; }
+  .bv-del-btn:hover { color: #e06fa0; }
+  .bv-clear-btn { width: 100%; padding: 9px; background: none; border: 1px solid #e06fa044; border-radius: var(--radius-sm); color: #e06fa0; font-size: 12px; cursor: pointer; font-family: 'Inter', sans-serif; }
+  .bv-clear-btn:hover { background: #fdf2f5; }
+  .bag-del-btn { width: 100%; margin-top: 8px; padding: 9px; background: none; border: 1px solid #e06fa044; border-radius: var(--radius-sm); color: #e06fa0; font-size: 12px; cursor: pointer; font-family: 'Inter', sans-serif; }
+  .bag-del-btn:hover { background: #fdf2f5; }
+  .lug-icon { font-size: 20px; line-height: 1; flex-shrink: 0; }
+  .lug-val { font-family: 'Unbounded', sans-serif; font-size: 13px; font-weight: 600; line-height: 1; }
+  .lug-label { font-size: 12px; color: var(--text3); white-space: normal; word-break: break-word; max-width: 100%; padding: 0 4px; text-align: center; }
+
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; position: relative; }
+  .stats-bar { position: absolute; bottom: 0; left: 0; height: 3px; background: var(--accent); border-radius: 0 3px 3px 0; transition: width 0.4s; pointer-events: none; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; text-align: center; cursor: pointer; transition: background 0.1s; }
+  .stat:hover { background: var(--surface2); }
+  .stat-val { font-family: 'Unbounded', sans-serif; font-size: 18px; font-weight: 600; color: var(--accent); }
+  .stat-label { font-size: 10px; color: var(--text3); margin-top: 2px; }
+
+  .progress-bar { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 20px; }
+  .progress-label { font-size: 11px; color: var(--text2); margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .bar-bg { background: var(--surface2); border-radius: 99px; height: 6px; }
+  .bar-fill { background: var(--accent); border-radius: 99px; height: 6px; transition: width 0.3s; }
+  .bar-tsk { background: var(--surface2); border-radius: 99px; height: 6px; }
+
+  .section { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; overflow: hidden; }
+  .section-header { display: flex; align-items: center; gap: 10px; padding: 12px 14px; cursor: pointer; background: var(--surface); user-select: none; position: relative; overflow: hidden; }
+  .section-header-progress { position: absolute; bottom: 0; left: 0; height: 2px; border-radius: 0; transition: width 0.4s; }
+  .section-header:hover { background: var(--surface2); }
+  .section-icon { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+  .section-title { font-size: 13px; font-weight: 500; color: var(--text); flex: 1; }
+  .section-meta { font-size: 10px; color: var(--text3); }
+  .section-chevron { color: var(--text3); font-size: 11px; transition: transform 0.2s; }
+  .section-body { display: none; border-top: 1px solid var(--border); }
+  .section-body.open { display: block; }
+
+  .item { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.1s; position: relative; }
+  .item:last-child { border-bottom: none; }
+  .item:hover { background: rgba(255,255,255,0.02); }
+  .item:hover .item-actions { opacity: 1; }
+  .item.checked { opacity: 0.45; }
+  .checkbox { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--border2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; cursor: pointer; }
+  .item.checked .checkbox { background: var(--accent); border-color: var(--accent); }
+  .checkmark { color: #0f1117; font-size: 11px; font-weight: 700; display: none; }
+  .item.checked .checkmark { display: block; }
+  .item-content { flex: 1; min-width: 0; }
+  .item-name { font-size: 13px; color: var(--text); line-height: 1.4; }
+  .item.checked .item-name { text-decoration: line-through; color: var(--text3); }
+  .item-note { font-size: 11px; color: var(--text3); margin-top: 2px; font-weight: 300; }
+  .item-qty-display { font-size: 11px; color: var(--text3); display: inline; margin-left: 4px; }
+
+  .item-actions { display: flex; gap: 4px; opacity: 1; flex-shrink: 0; align-items: center; }
+  .action-btn { background: none; border: none; border-radius: 5px; color: var(--text3); font-size: 13px; padding: 2px 5px; cursor: pointer; transition: all 0.15s; font-family: 'Inter', sans-serif; white-space: nowrap; }
+  .action-btn:hover { background: var(--surface2); color: var(--text); }
+  .action-btn.del:hover { border-color: #e06fa066; color: #e06fa0; }
+
+  .bag-tag { font-size: 9px; padding: 2px 6px; border-radius: 99px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+  .drag-handle { background: none; border: none; color: var(--border2); font-size: 14px; padding: 0 4px 0 0; cursor: grab; flex-shrink: 0; line-height: 1; touch-action: none; user-select: none; -webkit-user-select: none; }
+  .drag-handle:active { cursor: grabbing; color: var(--text3); }
+  .item.dragging { opacity: 0.25; }
+  .drop-line { height: 2px; background: var(--accent); margin: 0 8px; border-radius: 99px; pointer-events: none; }
+  .section-drop-line { height: 3px; background: var(--accent); margin: 3px 0; border-radius: 99px; pointer-events: none; }
+
+  /* Edit overlay */
+  .edit-overlay { display: none; position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
+  .edit-overlay.show { display: flex; }
+  .edit-modal { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); padding: 20px; width: 100%; max-width: 380px; position: relative; }
+  .edit-modal h3 { font-family: 'Unbounded', sans-serif; font-size: 13px; font-weight: 500; margin-bottom: 14px; color: var(--text); }
+  .edit-field { margin-bottom: 10px; }
+  .edit-label { font-size: 11px; color: var(--text2); margin-bottom: 4px; }
+  .edit-input { width: 100%; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius-sm); color: var(--text); font-size: 13px; padding: 8px 10px; font-family: 'Inter', sans-serif; outline: none; }
+  .edit-input:focus { border-color: var(--accent); }
+  .edit-select { width: 100%; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius-sm); color: var(--text); font-size: 13px; padding: 8px 10px; font-family: 'Inter', sans-serif; outline: none; }
+  .edit-select:focus { border-color: var(--accent); }
+  .edit-btns { display: flex; gap: 8px; margin-top: 14px; }
+  .edit-save { flex: 1; padding: 9px; background: var(--accent); border: none; border-radius: var(--radius-sm); color: #0f1117; font-size: 13px; font-weight: 500; cursor: pointer; font-family: 'Inter', sans-serif; }
+  .edit-cancel { padding: 9px 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text2); font-size: 13px; cursor: pointer; font-family: 'Inter', sans-serif; }
+  .edit-del { padding: 9px 12px; background: none; border: 1px solid #e06fa044; border-radius: var(--radius-sm); color: #e06fa0; font-size: 13px; cursor: pointer; font-family: 'Inter', sans-serif; }
+  .edit-del:hover { background: #fdf2f5; }
+
+  /* Add item row */
+  .add-item-row { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--border); }
+  .add-input { flex: 1; min-width: 0; background: var(--surface2); border: 1.5px solid transparent; border-radius: 10px; color: var(--text); font-size: 14px; padding: 9px 12px; outline: none; transition: border-color 0.15s; }
+  .add-input:focus { border-color: var(--accent); background: var(--surface); }
+  .add-input::placeholder { color: var(--text3); }
+  .add-btn { background: var(--accent); border: none; border-radius: 10px; color: #0f1117; font-size: 20px; font-weight: 400; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; -webkit-tap-highlight-color: transparent; transition: filter 0.15s; }
+  .add-btn:active { filter: brightness(0.88); }
+  .add-bag-select { background: var(--surface2); border: 1.5px solid transparent; border-radius: 10px; color: var(--text2); font-size: 13px; padding: 9px 6px; outline: none; cursor: pointer; flex-shrink: 0; max-width: 90px; }
+  .add-bag-select:focus { border-color: var(--accent); }
+
+  .reset-btn { width: 100%; padding: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text2); font-size: 12px; cursor: pointer; margin-top: 12px; font-family: 'Inter', sans-serif; }
+  .reset-btn:hover { background: var(--surface2); color: var(--text); }
+  .note-box { background: rgba(79,200,160,0.06); border: 1px solid rgba(79,200,160,0.2); border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 16px; font-size: 12px; color: var(--text2); line-height: 1.6; }
+  .big-add-btn { flex: 1; padding: 11px 16px; background: var(--accent); border: none; border-radius: 10px; color: #0f1117; font-size: 14px; font-weight: 500; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: filter 0.15s; }
+  .big-add-btn:active { filter: brightness(0.88); }
+  .onboarding-btn { width:100%;display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;cursor:pointer;font-size:14px;color:var(--text);-webkit-tap-highlight-color:transparent;font-family:inherit; }
+  .onboarding-btn:active { background:var(--surface2); }
+  .section-add-btn { background: none; border: 1px solid var(--border2); border-radius: 6px; color: var(--text2); font-size: 16px; font-weight: 400; width: 26px; height: 26px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; line-height: 1; }
+  .section-add-btn:hover { background: var(--surface2); color: var(--text); }
+  .section-del-btn { background: none; border: none; color: var(--text3); font-size: 13px; padding: 4px 6px; cursor: pointer; border-radius: 5px; flex-shrink: 0; line-height: 1; }
+  .section-del-btn:hover { background: #fee2e2; color: #e06fa0; }
+  .copy-btn { width: 100%; padding: 8px; background: none; border: 1px solid var(--border); color: var(--text3); font-size: 12px; cursor: pointer; font-family: 'Inter', sans-serif; }
+  .copy-btn:hover { background: var(--surface2); color: var(--text2); }
+  .copy-btn.copied { color: var(--accent); border-color: var(--accent); }
+  .add-overlay { display: none; position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0,0,0,0.75); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
+  .add-overlay.show { display: flex; }
+  .add-modal { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); padding: 20px; width: 100%; max-width: 380px; }
+  .add-modal h3 { font-family: 'Unbounded', sans-serif; font-size: 13px; font-weight: 500; margin-bottom: 14px; color: var(--text); }
+  .print-btn { width: 100%; padding: 12px; background: var(--blue); border: none; border-radius: var(--radius-sm); color: #fff; font-size: 13px; font-weight: 500; cursor: pointer; margin-top: 8px; font-family: 'Inter', sans-serif; }
+  .print-btn:hover { filter: brightness(1.1); }
+  .section-type-btn { display: flex; align-items: center; justify-content: center; padding: 8px 10px; background: var(--surface2); border: 1.5px solid var(--border2); border-radius: var(--radius-sm); cursor: pointer; font-size: 12px; color: var(--text2); transition: all 0.15s; user-select: none; -webkit-user-select: none; }
+  .section-type-btn:has(input:checked) { background: var(--surface2); border-color: var(--accent); color: var(--text); font-weight: 500; }
+  .section-type-btn:hover { border-color: var(--accent); }
+  .add-section-btn { flex-shrink: 0; width: auto; padding: 11px 16px; background: var(--surface); border: 1px solid var(--border2); border-radius: 10px; color: var(--text2); font-size: 14px; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background 0.15s; }
+  .add-section-btn:active { background: var(--surface2); }
+  .add-section-overlay { display: none; position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0,0,0,0.75); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
+  .add-section-overlay.show { display: flex; }
+  .color-grid { display: flex; gap: 8px; flex-wrap: wrap; padding: 2px; }
+  .color-swatch { width: 26px; height: 26px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; transition: border-color 0.15s; flex-shrink: 0; }
+  .color-swatch.selected { border-color: var(--text); }
+  .event-day { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; padding: 14px 0 6px; }
+  .event-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: flex-start; gap: 12px; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background 0.1s; }
+  .event-card:active { background: var(--surface2); }
+  .event-time-col { display: flex; flex-direction: column; align-items: center; gap: 2px; flex-shrink: 0; min-width: 44px; }
+  .event-time { font-family: 'Unbounded', sans-serif; font-size: 13px; font-weight: 600; color: var(--accent); }
+  .event-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border2); margin-top: 4px; }
+  .event-body { flex: 1; min-width: 0; }
+  .event-title { font-size: 14px; font-weight: 500; color: var(--text); }
+  .event-note { font-size: 12px; color: var(--text3); margin-top: 3px; }
+  .event-empty { text-align: center; padding: 40px 20px; color: var(--text3); font-size: 16px; }
+  @media (max-width: 600px) {
+    .action-btn.del { display: none; }
+  }
+  @media print {
+    ._print-hide { display: none !important; }
+    body { background: #fff; color: #000; padding: 16px; }
+    .bottom-nav, .stats,
+    .big-add-btn, .reset-btn, .print-btn, .item-actions, #clear-data-btn,
+    .add-item-row, .copy-btn, .note-box, .add-section-btn,
+    .drag-handle, .section-del-btn,
+    .transport-card-add, .transport-card-drag, .transport-card-edit,
+    .lug-add { display: none !important; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .section { border: 1px solid #ccc; border-radius: 8px; margin-bottom: 8px; break-inside: avoid; }
+    .section-header { background: #f5f5f5 !important; }
+    .section-title, .section-meta { color: #000 !important; }
+    .section-body { display: block !important; }
+    .item { border-bottom: 1px solid #eee; padding: 6px 12px; background: #fff !important; }
+    .item-name, .item-note { color: #000 !important; }
+    .item.checked { opacity: 1 !important; }
+    .item.checked .item-name { text-decoration: none !important; color: #000 !important; }
+    .item-note { color: #555 !important; }
+    .checkbox { border: 1.5px solid #999; border-radius: 4px; }
+    .item.checked .checkbox { background: #34c759; border-color: #34c759; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ Поездка ══ -->
+<div id="tab-bags" class="tab-content">
+  <div class="tab-header">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div class="header-title">Поездка</div>
+      <div style="display:flex;gap:4px;align-items:center">
+        <button onclick="openAppInfo()" style="background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:4px;line-height:1;display:flex;align-items:center;justify-content:center;width:28px;height:28px;font-family:inherit">🛈︎</button>
+        <button id="clear-data-btn" onclick="openClearDataModal()" style="background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:4px;line-height:1;display:flex;align-items:center;justify-content:center;width:28px;height:28px">⛌</button>
+        <button id="install-btn" onclick="handleInstall()" style="background:none;border:none;color:var(--text3);font-size:25px;cursor:pointer;padding:4px;line-height:1;display:flex;align-items:center;justify-content:center;width:28px;height:28px;font-family:inherit">⌂</button>
+        
+      </div>
+    </div>
+    <div class="header-sub" id="header-sub" style="display:none"></div>
+  </div>
+  <div id="trip-onboarding" style="margin-top:8px">
+    <button id="ob-cities" class="onboarding-btn" onclick="openTripEdit()"><span style="font-size:22px">🏖️</span><span>Добавить направление</span></button>
+    <button id="ob-transport" class="onboarding-btn" onclick="openFlightEdit(null)"><span style="font-size:22px">✈️</span><span>Добавить транспорт</span></button>
+    <button id="ob-bags" class="onboarding-btn" onclick="openAddBag()"><span style="font-size:22px">🛍️</span><span>Добавить сумки</span></button>
+  </div>
+  <div id="transport-bar" style="margin-bottom:12px"></div>
+  <div class="luggage-bar" id="luggage-bar" style="margin-bottom:12px"></div>
+</div>
+
+<!-- ══ Вещи ══ -->
+<div id="tab-items" class="tab-content active">
+  <div class="tab-header">
+    <div class="header-title">Вещи</div>
+  </div>
+  <div class="stats" id="items-stats">
+    <div class="stat" onclick="openStatView('all')"><div class="stat-val" id="total-count">0</div><div class="stat-label">всего вещей</div></div>
+    <div class="stat" onclick="openStatView('checked')"><div class="stat-val" id="checked-count">0</div><div class="stat-label">собрано</div></div>
+    <div class="stat" onclick="openStatView('unchecked')"><div class="stat-val" id="left-count">0</div><div class="stat-label">осталось</div></div>
+    <div class="stats-bar" id="bar"></div>
+  </div>
+  <div id="items-onboarding" style="display:none;margin-top:8px">
+    <button class="onboarding-btn" onclick="openAddForm()"><span style="font-size:22px">👠</span><span>Добавить вещь</span></button>
+    <button class="onboarding-btn" onclick="openAddSectionForm()"><span style="font-size:22px">🗂️</span><span>Добавить список вещей</span></button>
+  </div>
+  <div id="sections"></div>
+  <button class="reset-btn" id="items-reset" onclick="resetAll()">↺ Сбросить все отметки</button>
+</div>
+
+<!-- ══ Задачи ══ -->
+<div id="tab-tasks" class="tab-content">
+  <div class="tab-header">
+    <div class="header-title">Задачи</div>
+  </div>
+  <div id="tasks-onboarding" style="display:none;margin-top:8px">
+    <button class="onboarding-btn" onclick="openAddTaskForm()"><span style="font-size:22px">📝</span><span>Добавить задачу</span></button>
+    <button class="onboarding-btn" onclick="openAddSectionForm('action')"><span style="font-size:22px">🗂️</span><span>Добавить список задач</span></button>
+  </div>
+  <div id="todo-container"></div>
+</div>
+
+<!-- ══ События ══ -->
+<div id="tab-events" class="tab-content">
+  <div class="tab-header">
+    <div class="header-title">События</div>
+  </div>
+  <div id="events-onboarding" style="display:none;margin-top:8px">
+    <button class="onboarding-btn" onclick="openEventForm(null)"><span style="font-size:22px">⏰</span><span>Добавить событие</span></button>
+  </div>
+  <div id="events-container"></div>
+</div>
+
+<div class="quick-actions" id="quick-actions"></div>
+<!-- ══ Bottom Nav ══ -->
+<nav class="bottom-nav">
+  <button class="bnav-btn" id="bnav-bags" onclick="switchTab('bags')">
+    <span class="bnav-icon">🌐</span>
+    <span class="bnav-label">Поездка</span>
+  </button>
+  <button class="bnav-btn active" id="bnav-items" onclick="switchTab('items')">
+    <span class="bnav-icon">📦</span>
+    <span class="bnav-label">Вещи</span>
+  </button>
+  <button class="bnav-btn" id="bnav-tasks" onclick="switchTab('tasks')">
+    <span class="bnav-icon">✅</span>
+    <span class="bnav-label">Задачи</span>
+  </button>
+  <button class="bnav-btn" id="bnav-events" onclick="switchTab('events')">
+    <span class="bnav-icon">📅</span>
+    <span class="bnav-label">События</span>
+  </button>
+</nav>
+
+<div class="edit-overlay" id="editOverlay">
+  <div class="edit-modal">
+    <h3 id="editTitle">Редактировать</h3>
+    <div class="edit-field">
+      <div class="edit-label">Название</div>
+      <input class="edit-input" id="editName" type="text">
+    </div>
+    <div class="edit-field">
+      <div class="edit-label">Количество</div>
+      <input class="edit-input" id="editQty" type="text" placeholder="× 1, × 2 пары...">
+    </div>
+    <div class="edit-field">
+      <div class="edit-label">Примечание</div>
+      <input class="edit-input" id="editNote" type="text" placeholder="необязательно">
+    </div>
+    <div class="edit-field">
+      <div class="edit-label">Список</div>
+      <select class="edit-select" id="editSection"></select>
+    </div>
+    <div class="edit-field">
+      <div class="edit-label">Куда положить</div>
+      <select class="edit-select" id="editBag"></select>
+    </div>
+    <div class="edit-btns">
+      <button class="edit-del" onclick="deleteFromEdit()">✕</button>
+      <button class="edit-cancel" onclick="closeEdit()">Отмена</button>
+      <button class="edit-save" onclick="saveEdit()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<div class="add-overlay" id="addOverlay">
+  <div class="add-modal">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <h3 style="margin-bottom:0">Добавить вещь</h3>
+      <button onclick="closeAddForm()" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;padding:0 0 0 8px;line-height:1">✕</button>
+    </div>
+    <div class="edit-field">
+      <div class="edit-label">Список</div>
+      <select class="edit-select" id="addSection"></select>
+    </div>
+    <div class="edit-field">
+      <div class="edit-label">Название</div>
+      <input class="edit-input" id="addName" type="text" placeholder="Название вещи">
+    </div>
+    <div class="edit-field" id="addQtyField">
+      <div class="edit-label">Количество</div>
+      <input class="edit-input" id="addQty" type="text" placeholder="× 1, × 2 пары...">
+    </div>
+    <div class="edit-field">
+      <div class="edit-label">Комментарий</div>
+      <input class="edit-input" id="addNote" type="text" placeholder="необязательно">
+    </div>
+    <div class="edit-field" id="addBagField">
+      <div class="edit-label">Куда положить</div>
+      <select class="edit-select" id="addBag"></select>
+    </div>
+    <div class="edit-btns">
+      <button class="edit-cancel" onclick="closeAddForm()">Отмена</button>
+      <button class="edit-save" onclick="submitAddForm()">Добавить</button>
+    </div>
+  </div>
+</div>
+
+<div class="edit-overlay" id="tripEditOverlay">
+  <div class="edit-modal">
+    <h3>Направление</h3>
+    <div class="edit-field">
+      <div style="display:flex;gap:6px">
+        <input class="edit-input" id="tripCity" type="text" placeholder="Добавить город…" onkeydown="if(event.key==='Enter'){addTripCity();event.preventDefault()}">
+        <button class="add-btn" onclick="addTripCity()" style="flex-shrink:0">+</button>
+      </div>
+      <div class="edit-label">Города / направления</div>
+      <div class="trip-cities-list" id="tripCitiesTags"></div>
+    </div>
+    <div id="tripStatus" style="font-size:12px;min-height:18px;margin:4px 0;color:var(--text3)"></div>
+    <div class="edit-btns">
+      <button class="edit-cancel" onclick="closeTripEdit()">Отмена</button>
+      <button class="edit-save" onclick="saveTripEdit()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<div class="edit-overlay" id="flightEditOverlay">
+  <div class="edit-modal">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <h3 id="flightEditTitle" style="margin-bottom:0">Маршрут</h3>
+      <button onclick="closeFlightEdit()" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;padding:0 0 0 8px;line-height:1">✕</button>
+    </div>
+    <div class="edit-field"><div class="edit-label">Название (рейс / маршрут)</div><input class="edit-input" id="tranName" type="text" placeholder="PR2026"></div>
+    <div class="edit-field"><div class="edit-label">Откуда</div><input class="edit-input" id="tranFrom" type="text" placeholder="Париж" list="tranCitiesList" onblur="autoFillTZ(this.value,'from')"></div>
+    <div style="display:grid;grid-template-columns:1fr 90px;gap:8px">
+      <div class="edit-field"><div class="edit-label">Дата отправления</div><input class="edit-input" id="tranFromDate" type="date" oninput="updateTranDuration()"></div>
+      <div class="edit-field"><div class="edit-label">Время</div><input class="edit-input" id="tranFromTime" type="time" oninput="updateTranDuration()"></div>
+    </div>
+    <div style="display:none">
+      <button id="tranFromTZBtn">🌍</button>
+      <input type="hidden" id="tranFromUTC">
+    </div>
+    <div class="edit-field"><div class="edit-label">Куда</div><input class="edit-input" id="tranTo" type="text" placeholder="Лондон list="tranCitiesList" onblur="autoFillTZ(this.value,'to')"></div>
+    <div style="display:grid;grid-template-columns:1fr 90px;gap:8px">
+      <div class="edit-field"><div class="edit-label">Дата прибытия <span id="tranDuration" style="color:var(--accent);font-size:10px"></span></div><input class="edit-input" id="tranToDate" type="date"></div>
+      <div class="edit-field"><div class="edit-label">Время</div><input class="edit-input" id="tranToTime" type="time" oninput="updateTranDuration()"></div>
+    </div>
+    <div style="display:none">
+      <button id="tranToTZBtn">🌍</button>
+      <input type="hidden" id="tranToUTC">
+    </div>    
+    <div class="edit-btns">
+      <button class="flight-del-btn" id="flightDeleteBtn" onclick="deleteFlight()">✕</button>
+      <button class="edit-cancel" onclick="closeFlightEdit()">Отмена</button>
+      <button class="edit-save" onclick="saveFlightEdit()">Сохранить</button>
+    </div>
+    
+  </div>
+</div>
+
+<div class="tz-overlay" id="tzOverlay">
+  <div class="tz-modal">
+    <div class="tz-header">
+      <h3 id="tzTitle">Часовой пояс</h3>
+      <input class="tz-search" id="tzSearch" type="text" placeholder="🔍 Поиск города, страны или GMT…" oninput="renderTZList(this.value)" autocomplete="off">
+    </div>
+    <div class="tz-list" id="tzList"></div>
+  </div>
+</div>
+
+<div class="bag-view-overlay" id="statViewOverlay">
+  <div class="bag-view-modal">
+    <div class="bv-header">
+      <div>
+        <div class="bv-title" id="statViewTitle"></div>
+        <div class="bv-stats" id="statViewStats"></div>
+      </div>
+      <button class="bv-close" onclick="closeStatView()">✕</button>
+    </div>
+    <div class="bv-content" id="statViewContent"></div>
+  </div>
+</div>
+
+<div class="bag-view-overlay" id="bagViewOverlay">
+  <div class="bag-view-modal">
+    <div class="bv-header">
+      <div>
+        <div class="bv-title" id="bagViewTitle"></div>
+        <div class="bv-stats" id="bagViewStats"></div>
+      </div>
+      <div style="display:flex;gap:4px;align-items:center">
+        <button class="bv-close" id="bagAddBtn" onclick="toggleBagAddMode()" title="Добавить вещи">＋</button>
+        <button class="bv-close" onclick="openBagEdit()" title="Редактировать">✎</button>
+        <button class="bv-close" id="bagCopyBtn" onclick="copyBagView()" title="Скопировать список">⎘</button>
+        <button class="bv-close" onclick="closeBagView()">✕</button>
+      </div>
+    </div>
+    <div class="bv-content" id="bagViewContent"></div>
+  </div>
+</div>
+
+<div class="edit-overlay" id="bagEditOverlay">
+  <div class="edit-modal">
+    <h3 id="bagEditTitle">Редактировать</h3>
+    <div class="edit-field" id="bagTemplateField">
+      <div class="edit-label">Шаблон</div>
+      <select class="edit-select" id="bagTemplate" onchange="applyBagTemplate(this.value)">
+        <option value="">— без шаблона</option>
+        <option value="hold">🧳 Багаж · 30 кг</option>
+        <option value="cabin">🎒 Кабинный · 8 кг</option>
+        <option value="personal">👜 Личная сумка · 4 кг</option>
+      </select>
+    </div>
+    <div class="edit-field"><div class="edit-label">Иконка</div><input class="edit-input" id="bagEditIcon" type="text" maxlength="2" placeholder="🧳"></div>
+    <div class="edit-field"><div class="edit-label">Название</div><input class="edit-input" id="bagEditLabel" type="text" placeholder="Багаж"></div>
+    <div class="edit-field"><div class="edit-label">Лимит веса</div><input class="edit-input" id="bagEditWeight" type="text" placeholder="30 кг"></div>
+    <div class="edit-btns">
+      <button class="edit-cancel" onclick="closeBagEdit()">Отмена</button>
+      <button class="edit-save" onclick="saveBagEdit()">Сохранить</button>
+    </div>
+    <button class="bag-del-btn" id="bagDelBtn" onclick="deleteBag()">✕ Удалить сумку</button>
+  </div>
+</div>
+
+<div class="add-section-overlay" id="addSectionOverlay">
+  <div class="add-modal">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <h3 class="add-modal-title" style="margin-bottom:0">Новый список</h3>
+      <button onclick="closeAddSectionForm()" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;padding:0 0 0 8px;line-height:1">✕</button>
+    </div>
+    <div class="edit-field">
+      <div class="edit-label">Название</div>
+      <input class="edit-input" id="sectionTitle" type="text" placeholder="Название списка" onkeydown="if(event.key==='Enter')submitAddSectionForm()">
+    </div>
+    <div class="edit-field">
+      <div class="edit-label">Иконка</div>
+      <select class="edit-select" id="emojiSelect" onchange="selectEmoji(this.value);document.getElementById('sectionIcon').style.display=this.value?'none':'';">
+        <option value="">— своя ↓ —</option>
+        <option value="👗">👗  Одежда</option>
+        <option value="👟">👟  Обувь</option>
+        <option value="👒">👒  Аксессуары</option>
+        <option value="🧳">🧳  Чемодан / багаж</option>
+        <option value="🎒">🎒  Рюкзак</option>
+        <option value="👜">👜  Сумка</option>
+        <option value="✈️">✈️  Перелёт</option>
+        <option value="🏖️">🏖️  Пляж</option>
+        <option value="🎁">🎁  Подарки</option>
+        <option value="🧴">🧴  Гигиена</option>
+        <option value="💊">💊  Аптечка</option>
+        <option value="📱">📱  Электроника</option>
+        <option value="📄">📄  Документы</option>
+        <option value="💡">💡  Покупки на месте</option>
+        <option value="🏋️">🏋️  Спорт</option>
+        <option value="📚">📚  Книги / досуг</option>
+        <option value="🍕">🍕  Еда</option>
+        <option value="☕">☕  Напитки</option>
+        <option value="🔑">🔑  Ключи / разное</option>
+        <option value="💼">💼  Работа</option>
+        <option value="🌸">🌸  Личное</option>
+        <option value="🏔️">🏔️  Природа / горы</option>
+        <option value="🚢">🚢  Круиз / море</option>
+        <option value="🎵">🎵  Музыка</option>
+        <option value="🎮">🎮  Игры</option>
+        <option value="📦">📦  Другое</option>
+        <option value="✅">✅  Задача</option>        
+      </select>
+      <input class="edit-input" id="sectionIcon" type="text" placeholder="введи иконку 🎯" maxlength="2" oninput="onCustomEmoji(this.value)" style="margin-top:6px;display:none">
+    </div>
+    <div class="edit-btns">
+      <button class="edit-del" id="sectionDelBtn" style="display:none" onclick="deleteSectionFromModal()">✕</button>
+      <button class="edit-cancel" onclick="closeAddSectionForm()">Отмена</button>
+      <button class="edit-save" onclick="submitAddSectionForm()">Создать</button>
+    </div>
+  </div>
+</div>
+
+<div class="edit-overlay" id="eventOverlay">
+  <div class="edit-modal">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <h3 style="margin-bottom:0">Новое событие</h3>
+      <button onclick="closeEventForm()" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;padding:0 0 0 8px;line-height:1">✕</button>
+    </div>
+    <div class="edit-field">
+      <div class="edit-label">Название</div>
+      <input class="edit-input" id="evTitle" type="text" placeholder="Массаж...">
+    </div>
+    <div class="edit-field">
+      <div class="edit-label">Дата</div>
+      <input class="edit-input" id="evDate" type="date">
+    </div>
+    <div class="edit-field">
+      <div class="edit-label">Время</div>
+      <input class="edit-input" id="evTime" type="time">
+    </div>
+    <div class="edit-field">
+      <div class="edit-label">Комментарий</div>
+      <input class="edit-input" id="evNote" type="text" placeholder="необязательно">
+    </div>
+    <div class="edit-btns">
+      <button class="edit-del" id="evDelBtn" style="display:none" onclick="deleteEvent()">✕</button>
+      <button class="edit-cancel" onclick="closeEventForm()">Отмена</button>
+      <button class="edit-save" onclick="submitEventForm()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<div class="edit-overlay" id="clearDataOverlay">
+  <div class="edit-modal">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h3 style="margin-bottom:0">Удалить данные</h3>
+      <button onclick="closeClearDataModal()" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;padding:0 0 0 8px;line-height:1">✕</button>
+    </div>
+    <label style="display:flex;align-items:center;gap:10px;padding:10px 0;cursor:pointer">
+      <input type="checkbox" id="clearTrip" style="width:18px;height:18px;cursor:pointer">
+      <span style="font-size:14px">Направления</span>
+    </label>
+    <label style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer">
+      <input type="checkbox" id="clearTransport" style="width:18px;height:18px;cursor:pointer">
+      <span style="font-size:14px">Транспорт</span>
+    </label>
+    <label style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer">
+      <input type="checkbox" id="clearBags" style="width:18px;height:18px;cursor:pointer">
+      <span style="font-size:14px">Сумки</span>
+    </label>    
+    <label style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer">
+      <input type="checkbox" id="clearItems" style="width:18px;height:18px;cursor:pointer">
+      <span style="font-size:14px">Списки вещей</span>
+    </label>
+    <label style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer">
+      <input type="checkbox" id="clearTasks" style="width:18px;height:18px;cursor:pointer">
+      <span style="font-size:14px">Списки задач</span>
+    </label>
+    <label style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer">
+      <input type="checkbox" id="clearEvents" style="width:18px;height:18px;cursor:pointer">
+      <span style="font-size:14px">События</span>
+    </label>
+
+    <div class="edit-btns" style="margin-top:16px">
+      <button class="edit-cancel" onclick="closeClearDataModal()">Отмена</button>
+      <button class="edit-del" onclick="confirmClearData()">Удалить</button>
+      <button class="edit-del" onclick="clearAll()">Удалить всё</button>
+    </div>
+  </div>
+</div>
+
+<div class="edit-overlay" id="iosInstallOverlay" onclick="if(event.target===this)closeIosInstall()">
+  <div class="edit-modal" style="padding:24px">
+    <button onclick="closeIosInstall()" style="position:absolute;top:16px;right:16px;background:var(--surface2);border:none;color:var(--text3);font-size:14px;cursor:pointer;padding:4px 8px;border-radius:50%;line-height:1;width:28px;height:28px;display:flex;align-items:center;justify-content:center">✕</button>
+
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:44px;margin-bottom:8px">🧳</div>
+      <h3 style="margin:0 0 4px;font-size:17px">На экран "Домой"</h3>
+      <p style="margin:0;font-size:13px;color:var(--text3)">Установите как приложение</p>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:0;border-radius:14px;overflow:hidden;border:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:14px;padding:13px 14px;background:var(--surface)">
+        <span style="width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</span>
+        <span style="font-size:14px;color:var(--text)">Откройте страницу в <b>Safari</b></span>
+      </div>
+      <div style="height:1px;background:var(--border)"></div>
+      <div style="display:flex;align-items:center;gap:14px;padding:13px 14px;background:var(--surface)">
+        <span style="width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</span>
+        <span style="font-size:14px;color:var(--text)">Нажмите <b>Поделиться</b> ↑</span>
+      </div>
+      <div style="height:1px;background:var(--border)"></div>
+      <div style="display:flex;align-items:center;gap:14px;padding:13px 14px;background:var(--surface)">
+        <span style="width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</span>
+        <span style="font-size:14px;color:var(--text)">Выберите <b>На экран "Домой"</b></span>
+      </div>
+      <div style="height:1px;background:var(--border)"></div>
+      <div style="display:flex;align-items:center;gap:14px;padding:13px 14px;background:var(--surface)">
+        <span style="width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">4</span>
+        <span style="font-size:14px;color:var(--text)">Нажмите <b>Добавить</b></span>
+      </div>
+    </div>
+
+    <p style="margin:12px 0 0;font-size:12px;color:var(--text3);text-align:center">Работает только в Safari</p>
+
+    <button onclick="closeIosInstall()" style="margin-top:16px;width:100%;padding:13px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-size:15px;font-weight:600;cursor:pointer">Понятно</button>
+  </div>
+</div>
+
+<div class="edit-overlay" id="androidInstallOverlay" onclick="if(event.target===this)closeAndroidInstall()">
+  <div class="edit-modal" style="padding:24px">
+    <button onclick="closeAndroidInstall()" style="position:absolute;top:16px;right:16px;background:var(--surface2);border:none;color:var(--text3);font-size:14px;cursor:pointer;padding:4px 8px;border-radius:50%;line-height:1;width:28px;height:28px;display:flex;align-items:center;justify-content:center">✕</button>
+
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:44px;margin-bottom:8px">🧳</div>
+      <h3 style="margin:0 0 4px;font-size:17px">На главный экран</h3>
+      <p style="margin:0;font-size:13px;color:var(--text3)">Установите как приложение</p>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:0;border-radius:14px;overflow:hidden;border:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:14px;padding:13px 14px;background:var(--surface)">
+        <span style="width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</span>
+        <span style="font-size:14px;color:var(--text)">Нажмите <b>⋮</b> в Chrome</span>
+      </div>
+      <div style="height:1px;background:var(--border)"></div>
+      <div style="display:flex;align-items:center;gap:14px;padding:13px 14px;background:var(--surface)">
+        <span style="width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</span>
+        <span style="font-size:14px;color:var(--text)">Выберите <b>Добавить на экран</b></span>
+      </div>
+      <div style="height:1px;background:var(--border)"></div>
+      <div style="display:flex;align-items:center;gap:14px;padding:13px 14px;background:var(--surface)">
+        <span style="width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</span>
+        <span style="font-size:14px;color:var(--text)">Нажмите <b>Добавить</b></span>
+      </div>
+    </div>
+
+    <button onclick="closeAndroidInstall()" style="margin-top:16px;width:100%;padding:13px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-size:15px;font-weight:600;cursor:pointer">Понятно</button>
+  </div>
+</div>
+
+<div class="edit-overlay" id="appInfoOverlay" onclick="if(event.target===this)closeAppInfo()">
+  <div class="edit-modal" style="padding:24px">
+    
+
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:44px;margin-bottom:8px">🧳</div>
+      <h3 style="margin:0 0 4px;font-size:17px">Чемодан</h3>
+      <p style="margin:0;font-size:13px;color:var(--text3)">Вещи, задачи и события — всегда под рукой</p>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:0;border-radius:14px;overflow:hidden;border:1px solid var(--border);margin-bottom:16px">
+      <div style="padding:13px 14px;background:var(--surface)">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Где хранятся данные</div>
+        <div style="font-size:14px;color:var(--text);line-height:1.5">Все данные сохраняются <b>только</b> на вашем устройстве, в localStorage браузера. Ничего не отправляется в интернет.</div>
+      </div>
+      <div style="height:1px;background:var(--border)"></div>
+      <div style="padding:13px 14px;background:var(--surface)">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Резервная копия</div>
+        <div style="font-size:14px;color:var(--text);line-height:1.5">Данные могут быть удалены при очистке браузера.<br>Чтобы не потерять - сохраните приложение на экран "Домой".</div>
+      </div>
+      <div style="height:1px;background:var(--border)"></div>
+      <div style="padding:13px 14px;background:var(--surface)">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Работа офлайн</div>
+        <div style="font-size:14px;color:var(--text);line-height:1.5">Приложение работает без интернета после первой загрузки.</div>
+      </div>
+    </div>
+
+    <button onclick="closeAppInfo()" style="width:100%;padding:13px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-size:15px;font-weight:600;cursor:pointer">Понятно</button>
+  </div>
+</div>
+
+<script>
+function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function safeColor(c, fallback) {
+  return /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : fallback;
+}
+
+function btag(id) {
+  const b = bagMeta(id); const col = bagColor(id);
+  const sc = safeColor(col, '#8e8e93');
+  return `<span class="bag-tag" style="background:${sc}22;color:${sc}">${esc(b.label||id)}</span>`;
+}
+
+const sections = [
+  {
+    icon:'👗', color:'#e06fa0', bg:'#e06fa015',
+    title:'Одежда', meta:'',
+    items:[
+      { name:'Платье/сарафан лёгкий', qty:'× 3', note:'Хлопок или лён', bag:'hold' },
+      { name:'Футболка', qty:'× 4', bag:'hold' },
+      { name:'Шорты', qty:'× 2', bag:'hold' },
+      { name:'Лёгкие брюки/джинсы', qty:'× 1', note:'На вечер и прохладу', bag:'hold' },
+      { name:'Купальник', qty:'× 2', note:'Один сохнет — второй надет', bag:'hold' },
+      { name:'Пляжная накидка/парео', qty:'× 1', bag:'hold' },
+      { name:'Нижнее бельё', qty:'× 8', note:'~5 дней на цикл стирки + запас', bag:'hold' },
+      { name:'Носки', qty:'× 5 пар', bag:'hold' },
+      { name:'Лёгкая кофта/кардиган', qty:'× 1', note:'Кондиционер в помещениях + пересадка в Стамбуле', bag:'hold' },
+      { name:'Дождевик компактный', qty:'× 1', bag:'hold' },
+      { name:'Пижама', qty:'× 1', bag:'hold' },      
+    ]
+  },
+  {
+    icon:'👟', color:'#e06fa0', bg:'#e06fa015',
+    title:'Обувь', meta:'',
+    items:[
+      { name:'Сандалии/вьетнамки', qty:'× 1 пара', bag:'hold' },
+      { name:'Кроссовки', qty:'× 1 пара', note:'Надеть на себя в самолёт — экономия места', bag:'cabin' },
+      { name:'Коралки пляжные', qty:'× 1 пара', note:'Галечный пляж — обязательно!', bag:'hold' },      
+    ]
+  },
+  {
+    icon:'👒', color:'#e06fa0', bg:'#e06fa015',
+    title:'Аксессуары', meta:'',
+    items:[
+      { name:'Панама/шляпа', qty:'× 1', note:'Надеть на голову — не занимает место', bag:'cabin' },
+      { name:'Солнечные очки', qty:'× 1', bag:'personal' },
+      { name:'Зонт складной', qty:'× 1', bag:'hold' },
+    ]
+  },
+  {
+    icon:'🏖️', color:'#e8a945', bg:'#e8a94515',
+    title:'Пляж', meta:'',
+    items:[
+      { name:'Пляжный шелтер/тент', qty:'× 1', note:'40×10 см в сложенном виде — легко в чемодан', bag:'hold' },
+      { name:'Пляжные коврики/подстилка', qty:'× 1–2', note:'Скатать рулоном', bag:'hold' },
+      { name:'Пляжные полотенца', qty:'× 4', note:'Скатать рулонами — на дно чемодана', bag:'hold' },
+      { name:'Сумка-холодильник', qty:'× 1', note:'Сложить плоско в чемодан', bag:'hold' },
+      { name:'Водонепроницаемый чехол для телефона', qty:'× 1', bag:'hold' },
+      { name:'Сухой мешок для мокрых вещей', qty:'× 1–2', bag:'hold' },      
+    ]
+  },
+  {
+    icon:'🧴', color:'#a78bfa', bg:'#a78bfa15',
+    title:'Гигиена и уход', meta:'',
+    items:[
+      { name:'Зубная щётка + паста', qty:'× 1', bag:'cabin' },
+      { name:'Шампунь + гель для душа', qty:'× 1', note:'До 100 мл в кабинный, остальное в багаж', bag:'hold' },
+      { name:'Крем SPF 50+', qty:'× 2', note:'2 недели пляжа — 1 флакон 200мл уходит за неделю', bag:'hold' },
+      { name:'Дезодорант', qty:'× 1', bag:'hold' },      
+      { name:'Влажные салфетки', qty:'× 1 пачка', note:'В личную сумку — пересадка в Стамбуле', bag:'personal' },
+      { name:'Расчёска', qty:'× 1', bag:'personal' },
+      { name:'Скинкер/уход для лица', qty:'', note:'Дорожный формат', bag:'cabin' },
+    ]
+  },
+  {
+    icon:'💊', color:'#fb923c', bg:'#fb923c15',
+    title:'Аптечка', meta:'',
+    items:[
+      { name:'Обезболивающее (Ibuprofen/Paracetamol)', qty:'× 1 уп.', bag:'cabin' },
+      { name:'Антигистаминное (Cetirizine)', qty:'× 1 уп.', bag:'cabin' },
+      { name:'Пластыри', qty:'× 1 уп.', bag:'cabin' },
+      { name:'Электролиты/Dioralyte', qty:'× 3–5 пак.', note:'Жара + море', bag:'cabin' },
+      { name:'Средство от укачивания', qty:'× 1 уп.', note:'Кораблик 18 июня', bag:'cabin' },
+      { name:'Imodium / лоперамид', qty:'× 1 уп.', note:'Желудочное расстройство в путешествии', bag:'cabin' },
+      { name:'Антисептик для рук (гель)', qty:'× 1', note:'До 100 мл — в кабинный', bag:'cabin' },
+      { name:'Репеллент от комаров', qty:'× 1', note:'', bag:'hold' },
+      { name:'Пантенол/Bepanthen', qty:'× 1', note:'Солнечный ожог', bag:'hold' },
+    ]
+  },
+  {
+    icon:'📱', color:'#6abf69', bg:'#6abf6915',
+    title:'Электроника и зарядки', meta:'',
+    items:[
+      { name:'Телефон + зарядка', qty:'× 1', bag:'personal' },
+      { name:'Наушники', qty:'× 1', bag:'personal' },
+      { name:'Переходник для розеток', qty:'× 1', note:'', bag:'hold' },
+      { name:'Пауэрбанк', qty:'× 1', note:'В ручную кладь — в багаж нельзя!', bag:'cabin' },      
+    ]
+  },
+  {
+    icon:'📄', color:'#fb923c', bg:'#fb923c15',
+    title:'Документы и деньги', meta:'',
+    items:[
+      { name:'Паспорт', qty:'× 1', bag:'personal' },
+      { name:'Карта банковская', qty:'× 1', bag:'personal' },
+      { name:'Запасная карта или наличные', qty:'', note:'На случай блокировки', bag:'personal' },
+      { name:'Страховой полис (скрин / распечатка)', qty:'× 1', bag:'personal' },
+      { name:'Распечатка брони жилья', qty:'× 1', bag:'personal' },
+      { name:'Маршрут перелёта / посадочные', qty:'× 1', bag:'personal' },
+    ]
+  },
+];
+
+const DEFAULT_TRANSPORT = [  
+];
+
+// ── State ──────────────────────────────────────────────
+let uidCounter = 0;
+function uid() { return 'u' + (++uidCounter) + '_' + Date.now(); }
+
+let state = loadState();
+let editTarget = null;
+
+// ── Persist ─────────────────────────────────────────────
+function loadState() {
+  try {
+    const st = JSON.parse(localStorage.getItem('mytrip4') || 'null') || buildInitialState();
+    if (!st.transport) st.transport = DEFAULT_TRANSPORT.map(s => ({ ...s }));
+    if (!st.trip) st.trip = { city: '', lat: 41.6415, lon: 41.6418, start: '', end: '', cities: [''] };
+    if (!st.trip.cities) st.trip.cities = st.trip.city ? [st.trip.city] : [];
+    if (!('weather' in st)) st.weather = null;
+    if (!st.trip.cityDates) st.trip.cityDates = {};
+    if (st.trip.activeCityIdx === undefined) st.trip.activeCityIdx = 0;
+    if (!st.bags) st.bags = {
+      hold:     { icon: '🧳', label: 'Багаж',       weight: '30 кг' },
+      cabin:    { icon: '🎒', label: 'Кабинный',     weight: '8 кг'  },
+      personal: { icon: '👜', label: 'Личная сумка', weight: '4 кг'  },
+    };
+    if (!st.events) st.events = [];
+    return st;
+  } catch(e) { return buildInitialState(); }
+}
+function buildInitialState() {
+  const st = {
+    sections: [],
+    events: [],
+    transport: DEFAULT_TRANSPORT.map(s => ({ ...s })),
+    trip: { city: '', start: '', end: '', cities: [] },
+    weather: null,
+    bags: {
+      hold:     { icon: '🧳', label: 'Багаж',       weight: '30 кг' },
+      cabin:    { icon: '🎒', label: 'Кабинный',     weight: '8 кг'  },
+      personal: { icon: '👜', label: 'Личная сумка', weight: '4 кг'  },
+    },
+  };
+  sections.forEach(s => {
+    st.sections.push({
+      icon: s.icon, bg: s.bg, title: s.title, meta: s.meta, type: s.type || 'items',
+      items: s.items.map(it => ({ id: uid(), name: it.name, qty: it.qty||'', note: it.note||'', bag: it.bag||'', checked: false }))
+    });
+  });
+  return st;
+}
+function persist() { localStorage.setItem('mytrip4', JSON.stringify(state)); }
+
+window.addEventListener('beforeprint', () => {
+  document.querySelectorAll('.section-body:not(.open)').forEach(el => el.classList.add('open', '_print'));
+
+  if (document.getElementById('tab-bags').classList.contains('active')) {
+    const hasItems  = state.sections.some(s => s.type !== 'action' && s.items.length > 0);
+    const hasTasks  = state.sections.some(s => s.type === 'action' && s.items.length > 0);
+    const hasEvents = state.events && state.events.length > 0;
+    if (hasItems)  { const el = document.getElementById('tab-items');  el.classList.add('active','_print'); }
+    if (hasTasks)  { const el = document.getElementById('tab-tasks');  el.classList.add('active','_print'); }
+    if (hasEvents) { const el = document.getElementById('tab-events'); el.classList.add('active','_print'); }
+  }
+
+  // Скрываем пустые секции
+  document.querySelectorAll('.section').forEach(el => {
+    if (!el.querySelector('.item')) el.classList.add('_print-hide', '_print');
+  });
+
+  // Скрываем кнопку печати если нечего печатать
+  const activeTab = document.querySelector('.tab-content.active:not(._print-hide)');
+  const hasContent = activeTab && (activeTab.querySelector('.item') || activeTab.querySelector('.event-card') || activeTab.querySelector('.transport-card'));
+  document.querySelectorAll('.print-btn').forEach(b => { if (!hasContent) b.classList.add('_print-hide', '_print'); });
+});
+window.addEventListener('afterprint', () => {
+  document.querySelectorAll('._print').forEach(el => el.classList.remove('open', 'active', '_print-hide', '_print'));
+});
+
+let eventEditId = null;
+let flightEditIdx = null;
+
+const quickActions = {
+  bags: [
+  { label: '+ 🏖️', className: 'primary', action: () => openTripEdit() },
+  { label: '+ ✈️', className: 'primary', action: () => openFlightEdit(null) },
+  { label: '+ 🛍️', className: 'primary', action: () => openAddBag() },
+  { label: '🖨️', className: 'ghost', action: () => window.print(),
+    visible: () => (state.transport && state.transport.length > 0) ||
+                   (state.bags && Object.keys(state.bags).some(k => !state.bags[k].deleted)) ||
+                   (state.trip && state.trip.cities && state.trip.cities.filter(Boolean).length > 0) }
+  ],
+  items: [
+    { label: '+ 👠', className: 'primary', action: () => openAddForm() },
+    { label: '+ 🗂️', className: '', action: () => openAddSectionForm() },
+    { label: '🖨️', className: 'ghost', action: () => window.print(),
+      visible: () => state.sections.some(s => s.type !== 'action' && s.items.length > 0) }
+  ],
+  tasks: [
+    { label: '+ 📝', className: 'primary', action: () => openAddTaskForm() },
+    { label: '+ 🗂️', className: '', action: () => openAddSectionForm('action') },
+    { label: '🖨️', className: 'ghost', action: () => window.print(),
+      visible: () => state.sections.some(s => s.type === 'action' && s.items.length > 0) }
+  ],
+  events: [
+    { label: '+ ⏰', className: 'primary', action: () => openEventForm(null) },
+    { label: '🖨️', className: 'ghost', action: () => window.print(),
+      visible: () => state.events && state.events.length > 0 }
+  ]
+};
+let bagViewType = null;
+let bagViewMode = 'view';
+let bagEditType = null;
+let editingSectionIdx = null;
+let pendingSectionType = 'items';
+let selEmoji = '📦';
+let selColorIdx = 0;
+let addFormMode = 'items';
+let statViewFilter = 'all';
+let tripCitiesTemp = [];
+let tripCityDatesTemp = {};
+let tzTarget = null;
+let detectedZone = null;
+let tDrag = null;
+
+function switchTab(tab) {
+  closeEdit(); closeAddForm(); closeAddSectionForm();
+  closeBagView(); closeBagEdit(); closeFlightEdit();
+  closeTripEdit(); closeStatView(); closeEventForm();
+  ['items','tasks','bags','events'].forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+    document.getElementById('bnav-' + t).classList.toggle('active', t === tab);
+  });
+  if (tab === 'events') renderEvents();
+  if (tab === 'bags') renderHeaderSub();
+  if (tab === 'items') updateStats();
+  if (tab === 'tasks') renderTodoSection();
+  const qa = document.getElementById('quick-actions');
+  if (qa && tab !== 'bags' && tab !== 'items' && tab !== 'tasks' && tab !== 'events') qa.style.display = '';
+  renderQuickActions(tab);
+  localStorage.setItem('activeTab', tab);
+}
+
+(function() {
+  const saved = localStorage.getItem('activeTab');
+  switchTab(saved && ['items','tasks','bags','events'].includes(saved) ? saved : 'bags');
+})();
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+
+// ── Render ──────────────────────────────────────────────
+const container = document.getElementById('sections');
+let openSections = new Set();
+
+function render() {
+  container.innerHTML = '';
+  state.sections.forEach((s, si) => {
+    if (s.isDefault && s.items.length === 0) return;
+    if (s.type === 'action') return; // рендерится в todo-container
+    const div = document.createElement('div');
+    div.className = 'section';
+    div.dataset.si = si;
+    const isOpen = openSections.has(si);
+
+    const isAction = s.type === 'action';
+    const itemsHtml = s.items.map(item => {
+      const tag = (!isAction && item.bag) ? btag(item.bag) : '';
+      return `<div class="item${item.checked ? ' checked' : ''}" id="item-${item.id}">
+        <button class="drag-handle" onpointerdown="initDrag(event,${si},'${item.id}')">⠿</button>
+        <div class="checkbox" onclick="toggleItem(${si},'${item.id}')"><span class="checkmark">✓</span></div>
+        <div class="item-content" onclick="toggleItem(${si},'${item.id}')">
+          <div class="item-name">${esc(item.name)}${!isAction && item.qty ? ` <span class="item-qty-display">${esc(item.qty)}</span>` : ''}</div>
+          ${item.note ? `<div class="item-note">${esc(item.note)}</div>` : ''}
+        </div>
+        ${tag}
+        <div class="item-actions">
+          <button class="action-btn" onclick="openEdit(${si},'${item.id}')">✎</button>
+          <button class="action-btn del" onclick="deleteItem(${si},'${item.id}')">✕</button>
+        </div>
+      </div>`;
+    }).join('');
+
+    const itemTotal = s.items.length;
+    const itemChecked = s.items.filter(i => i.checked).length;
+    const itemPct = itemTotal ? Math.round(itemChecked / itemTotal * 100) : 0;
+    const itemDone = itemTotal > 0 && itemPct === 100;
+    div.innerHTML = `
+      <div class="section-header" onclick="toggleSection(this, ${si})" style="${itemDone ? 'background:rgba(52,199,89,0.08)' : itemTotal === 0 ? 'background:#e8e8ed' : ''}">
+        <button class="drag-handle" onpointerdown="initSectionDrag(event,${si})" onclick="event.stopPropagation()">⠿</button>
+        <div class="section-icon" style="background:${itemDone ? 'rgba(52,199,89,0.15)' : safeColor((s.bg||'').slice(0,7),'#8e8e93')+'15'}">${itemDone ? '✓' : esc(s.icon)}</div>
+        <span class="section-title">${esc(s.title)}</span>
+        <span class="section-meta">${itemTotal ? `${itemChecked}/${itemTotal}` : '0 вещей'}</span>
+        <button class="section-del-btn" style="color:var(--text3);font-size:12px" onclick="event.stopPropagation();openEditSectionForm(${si})" title="Редактировать список">✎</button>
+        <span class="section-chevron" style="transform:${isOpen?'rotate(180deg)':''}">▾</span>
+        <div class="section-header-progress" style="width:${itemPct}%;background:${itemDone ? '#34c759' : safeColor((s.bg||'').slice(0,7),'#8e8e93')}"></div>
+      </div>
+      <div class="section-body${isOpen ? ' open' : ''}">
+        ${itemsHtml}
+        <button class="copy-btn" id="copy-btn-${si}" onclick="copySection(${si})">⎘ Скопировать список</button>
+        <div class="add-item-row">
+          <input class="add-input" id="add-input-${si}" placeholder="${isAction ? 'Добавить задачу...' : 'Добавить вещь...'}" onkeydown="if(event.key==='Enter')addItem(${si})">
+          ${!isAction ? `<select class="add-bag-select" id="add-bag-${si}">${bagSelectEmojis('')}</select>` : ''}
+          <button class="add-btn" onclick="addItem(${si})">+</button>
+        </div>
+      </div>`;
+    container.appendChild(div);
+  });
+  renderTodoSection();
+  updateStats();
+  const activeTab = ['items','tasks','bags','events'].find(t => document.getElementById('tab-'+t)?.classList.contains('active'));
+  if (activeTab) renderQuickActions(activeTab);
+}
+
+// ── Section Drag & Drop ──────────────────────────────────
+let secDrag = null;
+
+function initSectionDrag(e, si) {
+  e.preventDefault();
+  e.stopPropagation();
+  const sectionEl = document.querySelector(`[data-si="${si}"]`);
+  const headerEl = sectionEl.querySelector('.section-header');
+  const rect = sectionEl.getBoundingClientRect();
+  const ghost = headerEl.cloneNode(true);
+  ghost.style.cssText = `position:fixed;width:${rect.width}px;left:${rect.left}px;top:${e.clientY - 20}px;opacity:0.92;pointer-events:none;z-index:1000;box-shadow:0 8px 28px rgba(0,0,0,0.18);border-radius:10px;background:var(--surface);`;
+  document.body.appendChild(ghost);
+  sectionEl.style.opacity = '0.3';
+  secDrag = { si, el: sectionEl, ghost };
+  document.addEventListener('pointermove', onSecMove, { passive: false });
+  document.addEventListener('pointerup', onSecUp);
+  document.addEventListener('pointercancel', cancelSecDrag);
+}
+
+function onSecMove(e) {
+  if (!secDrag) return;
+  e.preventDefault();
+  secDrag.ghost.style.top = (e.clientY - 20) + 'px';
+  document.querySelectorAll('.section-drop-line').forEach(d => d.remove());
+  secDrag.ghost.style.visibility = 'hidden';
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  secDrag.ghost.style.visibility = '';
+  if (!el) return;
+  const target = el.closest('[data-si]');
+  if (target && parseInt(target.dataset.si) !== secDrag.si) {
+    const r = target.getBoundingClientRect();
+    const line = document.createElement('div');
+    line.className = 'section-drop-line';
+    container.insertBefore(line, e.clientY < r.top + r.height / 2 ? target : target.nextSibling);
+  }
+}
+
+function onSecUp(e) {
+  if (!secDrag) return;
+  document.removeEventListener('pointermove', onSecMove);
+  document.removeEventListener('pointerup', onSecUp);
+  document.removeEventListener('pointercancel', cancelSecDrag);
+  secDrag.ghost.remove();
+  secDrag.el.style.opacity = '';
+  document.querySelectorAll('.section-drop-line').forEach(d => d.remove());
+  const fromSi = secDrag.si;
+  secDrag = null;
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  if (!el) return;
+  const target = el.closest('[data-si]');
+  if (!target) return;
+  const targetSi = parseInt(target.dataset.si);
+  if (targetSi === fromSi) return;
+  const r = target.getBoundingClientRect();
+  reorderSection(fromSi, targetSi, e.clientY < r.top + r.height / 2);
+}
+
+function cancelSecDrag() {
+  if (!secDrag) return;
+  document.removeEventListener('pointermove', onSecMove);
+  document.removeEventListener('pointerup', onSecUp);
+  document.removeEventListener('pointercancel', cancelSecDrag);
+  secDrag.ghost.remove();
+  secDrag.el.style.opacity = '';
+  document.querySelectorAll('.section-drop-line').forEach(d => d.remove());
+  secDrag = null;
+}
+
+function deleteSection(si) {
+  const s = state.sections[si];
+  const count = s.items.length;
+  const msg = count > 0
+    ? `Удалить список "${s.title}" и все ${count} вещей?`
+    : `Удалить список "${s.title}"?`;
+  if (!confirm(msg)) return;
+  state.sections.splice(si, 1);
+  const newOpen = new Set();
+  openSections.forEach(i => { if (i < si) newOpen.add(i); else if (i > si) newOpen.add(i - 1); });
+  openSections = newOpen;
+  persist();
+  render();
+}
+
+function reorderSection(fromSi, targetSi, before) {
+  const openTitles = new Set([...openSections].map(i => state.sections[i]?.title));
+  const section = state.sections.splice(fromSi, 1)[0];
+  let insertAt = targetSi > fromSi ? targetSi - 1 : targetSi;
+  if (!before) insertAt++;
+  insertAt = Math.max(0, Math.min(insertAt, state.sections.length));
+  state.sections.splice(insertAt, 0, section);
+  openSections = new Set(
+    state.sections.map((s, i) => openTitles.has(s.title) ? i : -1).filter(i => i !== -1)
+  );
+  persist();
+  render();
+}
+
+// ── Item Drag & Drop ─────────────────────────────────────
+let drag = null;
+
+function initDrag(e, si, id) {
+  e.preventDefault();
+  e.stopPropagation();
+  const itemEl = document.getElementById('item-' + id);
+  const rect = itemEl.getBoundingClientRect();
+  const ghost = itemEl.cloneNode(true);
+  ghost.removeAttribute('id');
+  ghost.style.cssText = `position:fixed;width:${rect.width}px;left:${rect.left}px;top:${rect.top}px;opacity:0.88;pointer-events:none;z-index:1000;box-shadow:0 8px 28px rgba(0,0,0,0.18);border-radius:10px;background:var(--surface);`;
+  document.body.appendChild(ghost);
+  itemEl.classList.add('dragging');
+  drag = { si, id, el: itemEl, ghost, ox: e.clientX - rect.left, oy: e.clientY - rect.top };
+  document.addEventListener('pointermove', onDragMove, { passive: false });
+  document.addEventListener('pointerup', onDragUp);
+  document.addEventListener('pointercancel', cancelDrag);
+}
+
+function onDragMove(e) {
+  if (!drag) return;
+  e.preventDefault();
+  drag.ghost.style.left = (e.clientX - drag.ox) + 'px';
+  drag.ghost.style.top  = (e.clientY - drag.oy) + 'px';
+  document.querySelectorAll('.drop-line').forEach(d => d.remove());
+  drag.ghost.style.visibility = 'hidden';
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  drag.ghost.style.visibility = '';
+  if (!el) return;
+  const target = el.closest('.item');
+  if (target && target.id !== 'item-' + drag.id) {
+    const r = target.getBoundingClientRect();
+    const line = document.createElement('div');
+    line.className = 'drop-line';
+    target.parentNode.insertBefore(line, e.clientY < r.top + r.height / 2 ? target : target.nextSibling);
+  }
+}
+
+function onDragUp(e) {
+  if (!drag) return;
+  document.removeEventListener('pointermove', onDragMove);
+  document.removeEventListener('pointerup', onDragUp);
+  document.removeEventListener('pointercancel', cancelDrag);
+  drag.ghost.remove();
+  document.querySelectorAll('.drop-line').forEach(d => d.remove());
+  const { si: fromSi, id: fromId } = drag;
+  drag = null;
+  let dropped = false;
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  if (el) {
+    const targetItem = el.closest('.item');
+    if (targetItem && targetItem.id !== 'item-' + fromId) {
+      dropOnItem(fromSi, fromId, targetItem.id.replace('item-', ''), e.clientY);
+      dropped = true;
+    } else if (!targetItem) {
+      const sec = el.closest('[data-si]');
+      if (sec) { dropOnSection(fromSi, fromId, parseInt(sec.dataset.si)); dropped = true; }
+    }
+  }
+  document.getElementById('item-' + fromId)?.classList.remove('dragging');
+  if (dropped) render();
+}
+
+function cancelDrag() {
+  if (!drag) return;
+  document.removeEventListener('pointermove', onDragMove);
+  document.removeEventListener('pointerup', onDragUp);
+  document.removeEventListener('pointercancel', cancelDrag);
+  drag.ghost.remove();
+  drag.el.classList.remove('dragging');
+  document.querySelectorAll('.drop-line').forEach(d => d.remove());
+  drag = null;
+}
+
+function dropOnItem(fromSi, fromId, targetId, clientY) {
+  const srcItems = state.sections[fromSi].items;
+  const srcIdx = srcItems.findIndex(i => i.id === fromId);
+  if (srcIdx === -1) return;
+  const item = srcItems.splice(srcIdx, 1)[0];
+  let tSi = -1, tIdx = -1;
+  state.sections.forEach((s, si) => {
+    const idx = s.items.findIndex(i => i.id === targetId);
+    if (idx !== -1) { tSi = si; tIdx = idx; }
+  });
+  if (tSi === -1) { state.sections[fromSi].items.splice(srcIdx, 0, item); return; }
+  const targetEl = document.getElementById('item-' + targetId);
+  const r = targetEl ? targetEl.getBoundingClientRect() : null;
+  let insertAt = r && clientY > r.top + r.height / 2 ? tIdx + 1 : tIdx;
+  if (tSi === fromSi && srcIdx < insertAt) insertAt--;
+  state.sections[tSi].items.splice(Math.max(0, insertAt), 0, item);
+  if (tSi !== fromSi) openSections.add(tSi);
+  persist();
+}
+
+function dropOnSection(fromSi, fromId, targetSi) {
+  if (fromSi === targetSi) return;
+  const srcItems = state.sections[fromSi].items;
+  const srcIdx = srcItems.findIndex(i => i.id === fromId);
+  if (srcIdx === -1) return;
+  const item = srcItems.splice(srcIdx, 1)[0];
+  state.sections[targetSi].items.push(item);
+  openSections.add(targetSi);
+  persist();
+}
+
+// ── Actions ─────────────────────────────────────────────
+function toggleItem(si, id) {
+  const item = state.sections[si].items.find(i => i.id === id);
+  if (!item) return;
+  item.checked = !item.checked;
+  const s = state.sections[si];
+  if (s.items.length > 0 && s.items.every(i => i.checked)) {
+    setTimeout(() => { openSections.delete(si); render(); }, 600);
+  }
+  persist(); render();
+}
+
+function deleteItem(si, id) {
+  state.sections[si].items = state.sections[si].items.filter(i => i.id !== id);
+  persist(); render();
+}
+
+function addItem(si) {
+  const input = document.getElementById('add-input-' + si);
+  const val = cap(input.value.trim());
+  if (!val) return;
+  const bag = document.getElementById('add-bag-' + si)?.value || '';
+  state.sections[si].items.push({ id: uid(), name: val, qty: '', note: '', bag, checked: false });
+  openSections.add(si);
+  persist(); render();
+  setTimeout(() => {
+    const inp = document.getElementById('add-input-' + si);
+    if (inp) inp.focus();
+  }, 50);
+}
+
+function openEdit(si, id) {
+  const item = state.sections[si].items.find(i => i.id === id);
+  if (!item) return;
+  editTarget = { si, id };
+  document.getElementById('editTitle').textContent = 'Редактировать';
+  document.getElementById('editName').value = item.name;
+  document.getElementById('editQty').value = item.qty;
+  document.getElementById('editNote').value = item.note;
+  document.getElementById('editBag').innerHTML = bagSelectFull(item.bag || '');
+  const secSel = document.getElementById('editSection');
+  secSel.innerHTML = state.sections.map((s, i) =>
+    `<option value="${i}">${esc(s.icon)} ${esc(s.title)}</option>`
+  ).join('');
+  secSel.value = si;
+  document.getElementById('editOverlay').classList.add('show');
+}
+
+function deleteFromEdit() {
+  if (!editTarget) return;
+  deleteItem(editTarget.si, editTarget.id);
+  closeEdit();
+}
+
+function closeEdit() {
+  document.getElementById('editOverlay').classList.remove('show');
+  editTarget = null;
+}
+
+function saveEdit() {
+  if (!editTarget) return;
+  const { si: fromSi, id } = editTarget;
+  const item = state.sections[fromSi].items.find(i => i.id === id);
+  if (item) {
+    item.name = cap(document.getElementById('editName').value.trim()) || item.name;
+    item.qty  = document.getElementById('editQty').value.trim();
+    item.note = document.getElementById('editNote').value.trim();
+    item.bag  = document.getElementById('editBag').value;
+    const toSi = parseInt(document.getElementById('editSection').value, 10);
+    if (toSi !== fromSi) {
+      state.sections[fromSi].items = state.sections[fromSi].items.filter(i => i.id !== id);
+      state.sections[toSi].items.push(item);
+      openSections.add(toSi);
+    }
+  }
+  persist(); closeEdit(); render();
+}
+
+document.getElementById('editOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeEdit();
+});
+
+function getOrCreateUncategorized() {
+  let idx = state.sections.findIndex(s => s.isDefault);
+  if (idx === -1) {
+    state.sections.push({ icon: '📋', bg: '#8e8e9315', title: 'Без списка', meta: '', items: [], isDefault: true });
+    idx = state.sections.length - 1;
+  }
+  return idx;
+}
+
+addFormMode = 'items';
+
+function openAddForm() {
+  addFormMode = 'items';
+  document.querySelector('#addOverlay h3').textContent = 'Добавить вещь';
+  document.getElementById('addName').placeholder = 'Название вещи';
+  document.getElementById('addQtyField').style.display = '';
+  document.getElementById('addBagField').style.display = '';
+  const defaultSi = getOrCreateUncategorized();
+  const sel = document.getElementById('addSection');
+  sel.innerHTML = state.sections
+    .map((s, i) => ({ s, i }))
+    .filter(({ s }) => s.type !== 'action')
+    .map(({ s, i }) => `<option value="${i}">${esc(s.icon)} ${esc(s.title)}</option>`).join('');
+  sel.value = defaultSi;
+  document.getElementById('addName').value = '';
+  document.getElementById('addQty').value = '';
+  document.getElementById('addNote').value = '';
+  document.getElementById('addBag').innerHTML = bagSelectFull('');
+  document.getElementById('addOverlay').classList.add('show');
+  document.getElementById('addName').focus();
+}
+function openAddTaskForm(si = null) {
+  addFormMode = 'action';
+  document.querySelector('#addOverlay h3').textContent = 'Добавить задачу';
+  document.getElementById('addName').placeholder = 'Название задачи';
+  document.getElementById('addQtyField').style.display = 'none';
+  document.getElementById('addBagField').style.display = 'none';
+  const actionSections = state.sections.map((s, i) => ({ s, i })).filter(({ s }) => s.type === 'action');
+  const sel = document.getElementById('addSection');
+  sel.innerHTML = actionSections.map(({ s, i }) => `<option value="${i}">${esc(s.icon)} ${esc(s.title)}</option>`).join('');
+  if (si !== null) sel.value = si;
+  else if (actionSections.length > 0) sel.value = actionSections[0].i;
+  document.getElementById('addName').value = '';
+  document.getElementById('addNote').value = '';
+  document.getElementById('addOverlay').classList.add('show');
+  document.getElementById('addName').focus();
+}
+function openAddFormForSection(si) {
+  const s = state.sections[si];
+  if (s && s.type === 'action') {
+    openAddTaskForm(si);
+    return;
+  }
+  openAddForm();
+  document.getElementById('addSection').value = si;
+}
+function closeAddForm() { document.getElementById('addOverlay').classList.remove('show'); }
+function submitAddForm() {
+  const si = parseInt(document.getElementById('addSection').value, 10);
+  const name = cap(document.getElementById('addName').value.trim());
+  if (!name) { document.getElementById('addName').focus(); return; }
+  let qty = document.getElementById('addQty').value.trim();
+  if (qty && !qty.startsWith('×')) qty = '× ' + qty;
+  const note = document.getElementById('addNote').value.trim();
+  const bag = document.getElementById('addBag').value;
+  state.sections[si].items.push({ id: uid(), name, qty, note, bag, checked: false });
+  openSections.add(si);
+  persist(); closeAddForm(); render();
+  setTimeout(() => { const inp = document.getElementById('add-input-' + si); if (inp) inp.focus(); }, 50);
+}
+document.getElementById('addOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('addOverlay')) closeAddForm();
+});
+
+function copySection(si) {
+  const s = state.sections[si];
+  const isAction = s.type === 'action';
+  const lines = [s.title];
+  s.items.forEach((it, i) => {
+    let line;
+    if (isAction) {
+      line = `${i + 1}. ${it.checked ? '[V]' : '[ ]'} ${it.name}`;
+    } else {
+      line = `${i + 1}. ${it.name}`;
+      if (it.qty) line += ` ${it.qty}`;
+    }
+    if (it.note) line += ` — ${it.note}`;
+    lines.push(line);
+  });
+  const text = lines.join('\n');
+  const btn = document.getElementById('copy-btn-' + si);
+  function showCopied() {
+    btn.textContent = '✓ Скопировано';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '⎘ Скопировать список'; btn.classList.remove('copied'); }, 2000);
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(showCopied).catch(() => fallbackCopy(text, showCopied));
+  } else {
+    fallbackCopy(text, showCopied);
+  }
+}
+function fallbackCopy(text, cb) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+  document.body.appendChild(ta);
+  ta.focus(); ta.select();
+  try { document.execCommand('copy'); cb(); } catch(e) {}
+  document.body.removeChild(ta);
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeEdit(); closeFlightEdit(); closeTripEdit(); closeBagEdit(); closeTZOverlay(); closeAddForm(); closeAddSectionForm(); closeBagView(); closeStatView(); }
+});
+
+statViewFilter = 'all';
+function openStatView(filter) {
+  statViewFilter = filter;
+  renderStatView();
+  document.getElementById('statViewOverlay').classList.add('show');
+}
+function closeStatView() {
+  document.getElementById('statViewOverlay').classList.remove('show');
+}
+function renderStatView() {
+  const titles = { all: 'Все вещи', checked: 'Собрано ✓', unchecked: 'Осталось' };
+  let html = '', total = 0;
+  state.sections.forEach((s, si) => {
+    const items = s.items.filter(i =>
+      statViewFilter === 'all' ? true :
+      statViewFilter === 'checked' ? i.checked : !i.checked
+    );
+    if (!items.length) return;
+    total += items.length;
+    html += `<div class="bv-section-title"><span>${s.icon} ${esc(s.title)}</span><span class="bv-count">${items.length}</span></div>`;
+    items.forEach(item => {
+      html += `<div class="bv-item" onclick="toggleStatItem(${si},'${item.id}')">
+        <div class="checkbox" style="${item.checked ? 'background:var(--accent);border-color:var(--accent)' : ''}"><span class="checkmark" style="${item.checked ? 'display:block' : ''}">✓</span></div>
+        <div class="bv-name">${esc(item.name)}${item.qty ? ` <span class="item-qty-display">${esc(item.qty)}</span>` : ''}${item.note ? `<div class="item-note">${esc(item.note)}</div>` : ''}</div>
+        ${item.bag ? btag(item.bag) : ''}
+      </div>`;
+    });
+  });
+  if (!html) html = '<div style="text-align:center;padding:32px;color:var(--text3);font-size:13px">Нет вещей</div>';
+  document.getElementById('statViewTitle').textContent = titles[statViewFilter];
+  document.getElementById('statViewStats').textContent = `${total} вещей`;
+  document.getElementById('statViewContent').innerHTML = html;
+}
+function toggleStatItem(si, id) {
+  const item = state.sections[si].items.find(i => i.id === id);
+  if (!item) return;
+  item.checked = !item.checked;
+  persist(); renderStatView(); render();
+}
+document.getElementById('statViewOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('statViewOverlay')) closeStatView();
+});
+
+// ── Weather / Trip ────────────────────────────────────────
+const WMO = {
+  0:'☀️', 1:'🌤️', 2:'⛅', 3:'☁️',
+  45:'🌫️', 48:'🌫️',
+  51:'🌦️', 53:'🌦️', 55:'🌧️',
+  61:'🌧️', 63:'🌧️', 65:'🌧️',
+  71:'🌨️', 73:'🌨️', 75:'❄️', 77:'❄️',
+  80:'🌦️', 81:'🌧️', 82:'⛈️',
+  95:'⛈️', 96:'⛈️', 99:'⛈️',
+};
+
+function renderHeaderSub() {
+  const el = document.getElementById('header-sub');
+  const emptyEl      = document.getElementById('trip-empty');
+  const onboardingEl = document.getElementById('trip-onboarding');
+  if (!el) return;
+  const t = state.trip;
+  const cities       = t && t.cities && t.cities.filter(Boolean);
+  const hasCities    = cities && cities.length > 0;
+  const hasTransport = state.transport && state.transport.length > 0;
+  const hasBags      = state.bags && Object.keys(state.bags).some(k => !state.bags[k].deleted);
+  const hasData      = hasCities || hasTransport || hasBags;
+  if (emptyEl) emptyEl.style.display = 'none';
+
+  // Онбординг-кнопки: управляем каждой отдельно
+  // Нет транспорта и сумок → все 3 кнопки; есть транспорт, нет сумок → только Сумки; есть сумки → ни одной
+  const showAll  = !hasTransport && !hasBags;
+  const showBags = hasTransport && !hasBags;
+  const showAny  = showAll || showBags;
+  if (onboardingEl) onboardingEl.style.display = showAny ? '' : 'none';
+  document.getElementById('ob-cities').style.display    = showAll ? '' : 'none';
+  document.getElementById('ob-transport').style.display = showAll ? '' : 'none';
+  document.getElementById('ob-bags').style.display      = (showAll || showBags) ? '' : 'none';
+
+  const qa = document.getElementById('quick-actions');
+  if (qa && document.getElementById('tab-bags')?.classList.contains('active'))
+    qa.style.display = (hasTransport || hasBags) ? '' : 'none';
+
+  el.style.display = hasCities ? '' : 'none';
+  if (!hasCities) return;
+  const parts = [];
+  const { start: tripS, end: tripE } = getTripOverallDates();
+  if (tripS && tripE) {
+    const s = new Date(tripS + 'T00:00:00');
+    const e = new Date(tripE + 'T00:00:00');
+    const fmt = d => d.toLocaleDateString('ru-RU', { day:'numeric', month:'short' }).replace(' г.','');
+    parts.push(`${fmt(s)} – ${fmt(e)}`);
+    const today = new Date(); today.setHours(0,0,0,0);
+    const diff = Math.round((s - today) / 86400000);
+    if (diff > 0) parts.push(`через ${diff} ${diff===1?'день':diff<5?'дня':'дней'}`);
+    else if (diff === 0) parts.push('вылет сегодня 🎉');
+    else if (Math.round((e - today) / 86400000) >= 0) parts.push('в поездке ✈️');
+  }
+  parts.unshift(cities.join(', '));
+  el.innerHTML = `<span class="trip-edit-hint" onclick="openTripEdit()">${esc(parts.join(' · '))}</span>`;
+}
+
+function getTripOverallDates() {
+  const t = state.trip;
+  if (!t) return { start: null, end: null };
+  const cities = t.cities || [];
+  const cd = t.cityDates || {};
+  const starts = cities.map(c => (cd[c] && cd[c].start) || t.start).filter(Boolean).sort();
+  const ends   = cities.map(c => (cd[c] && cd[c].end)   || t.end).filter(Boolean).sort();
+  return {
+    start: starts.length ? starts[0] : t.start,
+    end:   ends.length   ? ends[ends.length - 1] : t.end,
+  };
+}
+
+
+tripCitiesTemp = [];
+tripCityDatesTemp = {};
+
+function openTripEdit() {
+  const t = state.trip || {};
+  tripCitiesTemp = [...(t.cities || (t.city ? [t.city] : []))];
+  tripCityDatesTemp = JSON.parse(JSON.stringify(t.cityDates || {}));
+  document.getElementById('tripCity').value = '';
+  const startEl = document.getElementById('tripStart');
+  const endEl   = document.getElementById('tripEnd');
+  if (startEl) startEl.value = t.start || '';
+  if (endEl)   endEl.value   = t.end   || '';
+  renderTripCitiesTags();
+  document.getElementById('tripEditOverlay').classList.add('show');
+  setTimeout(() => document.getElementById('tripCity').focus(), 50);
+}
+function renderTripCitiesTags() {
+  const fallbackStart = (document.getElementById('tripStart') || {}).value || (state.trip && state.trip.start) || '';
+  const fallbackEnd   = (document.getElementById('tripEnd')   || {}).value || (state.trip && state.trip.end)   || '';
+
+  // Сортировка по дате начала
+  tripCitiesTemp.sort((a, b) => {
+    const sa = (tripCityDatesTemp[a] && tripCityDatesTemp[a].start) || '';
+    const sb = (tripCityDatesTemp[b] && tripCityDatesTemp[b].start) || '';
+    return sa.localeCompare(sb);
+  });
+
+  // Собираем города с перекрытиями для подсветки
+  const overlappingCities = new Set();
+  for (let i = 0; i < tripCitiesTemp.length; i++) {
+    for (let j = i + 1; j < tripCitiesTemp.length; j++) {
+      const di = tripCityDatesTemp[tripCitiesTemp[i]] || {};
+      const dj = tripCityDatesTemp[tripCitiesTemp[j]] || {};
+      if (di.start && di.end && dj.start && dj.end && di.start < dj.end && dj.start < di.end) {
+        overlappingCities.add(tripCitiesTemp[i]);
+        overlappingCities.add(tripCitiesTemp[j]);
+      }
+    }
+  }
+
+  document.getElementById('tripCitiesTags').innerHTML = tripCitiesTemp.map((c, i) => {
+    const d = tripCityDatesTemp[c] || {};
+    const invalid = d.start && d.end && d.end < d.start;
+    const startBg = invalid ? 'background:rgba(229,57,53,0.15);border-color:#e53935;' : '';
+    const rowBg = !invalid && overlappingCities.has(c) ? 'background:rgba(91,156,246,0.08);border-radius:6px;' : '';
+    return `<div class="trip-city-row" style="${rowBg}">
+      <div class="trip-city-row-name">${esc(c)}</div>
+      <input class="trip-date-input" type="date" value="${d.start || fallbackStart}" onchange="updateCityDate('${c}','start',this.value)" title="Начало" style="${startBg}">
+      <span style="color:var(--text3);font-size:11px">–</span>
+      <input class="trip-date-input" type="date" value="${d.end || fallbackEnd}" onchange="updateCityDate('${c}','end',this.value)" title="Конец">
+      <button class="trip-city-del" onclick="removeTripCity(${i})">×</button>
+    </div>`;
+  }).join('');
+
+  updateTripStatus();
+}
+
+function updateTripStatus() {
+  const el = document.getElementById('tripStatus');
+  if (!el) return;
+  const errors = [], infos = [];
+
+  // Ошибки: конец < начала
+  tripCitiesTemp.forEach(c => {
+    const d = tripCityDatesTemp[c] || {};
+    if (d.start && d.end && d.end < d.start)
+      errors.push(`${esc(c)}: дата конца раньше начала`);
+  });
+
+  // Инфо: пересечения между городами (строгое — равенство граней не считается)
+  for (let i = 0; i < tripCitiesTemp.length; i++) {
+    for (let j = i + 1; j < tripCitiesTemp.length; j++) {
+      const di = tripCityDatesTemp[tripCitiesTemp[i]] || {};
+      const dj = tripCityDatesTemp[tripCitiesTemp[j]] || {};
+      if (di.start && di.end && dj.start && dj.end && di.start < dj.end && dj.start < di.end)
+        infos.push(`${esc(tripCitiesTemp[i])} и ${esc(tripCitiesTemp[j])} — даты пересекаются`);
+    }
+  }
+
+  let html = '';
+  errors.forEach(e => { html += `<div style="color:#e53935">⚠️ ${e}</div>`; });
+  infos.forEach(info => { html += `<div>ℹ️ ${info}</div>`; });
+  el.innerHTML = html;
+}
+function updateCityDate(city, field, val) {
+  if (!tripCityDatesTemp[city]) tripCityDatesTemp[city] = {};
+  tripCityDatesTemp[city][field] = val;
+  const d = tripCityDatesTemp[city];
+  if (field === 'start' && (!d.end || val > d.end)) d.end = val;
+  renderTripCitiesTags();
+}
+function addTripCity() {
+  const val = capFirst(document.getElementById('tripCity').value.trim());
+  if (!val || tripCitiesTemp.includes(val)) { document.getElementById('tripCity').value = ''; return; }
+  tripCitiesTemp.push(val);
+  const start = (document.getElementById('tripStart') || {}).value || (state.trip && state.trip.start) || '';
+  const end   = (document.getElementById('tripEnd')   || {}).value || (state.trip && state.trip.end)   || '';
+  tripCityDatesTemp[val] = { start, end };
+  document.getElementById('tripCity').value = '';
+  renderTripCitiesTags();
+}
+function removeTripCity(i) {
+  const name = tripCitiesTemp[i];
+  tripCitiesTemp.splice(i, 1);
+  delete tripCityDatesTemp[name];
+  renderTripCitiesTags();
+}
+function closeTripEdit() {
+  document.getElementById('tripEditOverlay').classList.remove('show');
+}
+function saveTripEdit() {
+  const inputVal = document.getElementById('tripCity').value.trim();
+  if (inputVal && !tripCitiesTemp.includes(inputVal)) tripCitiesTemp.push(inputVal);
+  if (!tripCitiesTemp.length) { document.getElementById('tripCity').focus(); return; }
+  const start = (document.getElementById('tripStart') || {}).value || (state.trip && state.trip.start) || '';
+  const end   = (document.getElementById('tripEnd')   || {}).value || (state.trip && state.trip.end)   || '';
+  state.trip = {
+    city: tripCitiesTemp[0],
+    cities: [...tripCitiesTemp],
+    cityDates: { ...tripCityDatesTemp },
+    start, end,
+  };
+  persist();
+  closeTripEdit();
+  renderHeaderSub();
+}
+document.getElementById('tripEditOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('tripEditOverlay')) closeTripEdit();
+});
+
+// ── Transport bar ─────────────────────────────────────────
+function parseUTC(date, time, utcOffset) {
+  const [y, mo, d] = date.split('-').map(Number);
+  const [h, m] = time.split(':').map(Number);
+  return Date.UTC(y, mo-1, d, h, m) - (parseFloat(utcOffset) || 0) * 3600000;
+}
+function calcDuration(fromDate, fromTime, fromUTC, toDate, toTime, toUTC) {
+  if (!fromTime || !toTime) return '';
+  if (fromDate && toDate) {
+    const mins = Math.round((parseUTC(toDate, toTime, toUTC) - parseUTC(fromDate, fromTime, fromUTC)) / 60000);
+    if (mins <= 0) return '';
+    const h = Math.floor(mins / 60), m = mins % 60;
+    return m > 0 ? `${h} ч ${m} мин` : `${h} ч`;
+  }
+  const [fh, fm] = fromTime.split(':').map(Number);
+  const [th, tm] = toTime.split(':').map(Number);
+  let mins = (th * 60 + tm) - (fh * 60 + fm);
+  if (mins <= 0) mins += 24 * 60;
+  const h = Math.floor(mins / 60), m = mins % 60;
+  return m > 0 ? `${h} ч ${m} мин` : `${h} ч`;
+}
+// ── Timezone picker ──────────────────────────────────────
+const TZ_DATA = [
+  // Часто используемые (UK)
+  { city:'Лондон',        country:'Великобритания',           zone:'Europe/London',                    common:true },
+  { city:'Манчестер',     country:'Великобритания',           zone:'Europe/London',                    common:true },
+  { city:'Эдинбург',      country:'Великобритания',           zone:'Europe/London',                    common:true },
+  { city:'Дублин',        country:'Ирландия',                 zone:'Europe/Dublin',                    common:true },
+  // Европа
+  { city:'Амстердам',     country:'Нидерланды',               zone:'Europe/Amsterdam' },
+  { city:'Афины',         country:'Греция',                   zone:'Europe/Athens'    },
+  { city:'Барселона',     country:'Испания',                  zone:'Europe/Madrid'    },
+  { city:'Берлин',        country:'Германия',                 zone:'Europe/Berlin'    },
+  { city:'Брюссель',      country:'Бельгия',                  zone:'Europe/Brussels'  },
+  { city:'Будапешт',      country:'Венгрия',                  zone:'Europe/Budapest'  },
+  { city:'Варшава',       country:'Польша',                   zone:'Europe/Warsaw'    },
+  { city:'Вена',          country:'Австрия',                  zone:'Europe/Vienna'    },
+  { city:'Гельсинки',     country:'Финляндия',                zone:'Europe/Helsinki'  },
+  { city:'Киев',          country:'Украина',                  zone:'Europe/Kiev'      },
+  { city:'Копенгаген',    country:'Дания',                    zone:'Europe/Copenhagen'},
+  { city:'Лиссабон',      country:'Португалия',               zone:'Europe/Lisbon'    },
+  { city:'Мадрид',        country:'Испания',                  zone:'Europe/Madrid'    },
+  { city:'Москва',        country:'Россия',                   zone:'Europe/Moscow'    },
+  { city:'Осло',          country:'Норвегия',                 zone:'Europe/Oslo'      },
+  { city:'Париж',         country:'Франция',                  zone:'Europe/Paris'     },
+  { city:'Прага',         country:'Чехия',                    zone:'Europe/Prague'    },
+  { city:'Рейкьявик',     country:'Исландия',                 zone:'Atlantic/Reykjavik'},
+  { city:'Рим',           country:'Италия',                   zone:'Europe/Rome'      },
+  { city:'Стокгольм',     country:'Швеция',                   zone:'Europe/Stockholm' },
+  { city:'Цюрих',         country:'Швейцария',                zone:'Europe/Zurich'    },
+  // Ближний Восток / Кавказ
+  { city:'Баку',          country:'Азербайджан',              zone:'Asia/Baku'        },
+  { city:'Батуми',        country:'Грузия',                   zone:'Asia/Tbilisi'     },
+  { city:'Дубай',         country:'ОАЭ',                      zone:'Asia/Dubai'       },
+  { city:'Ереван',        country:'Армения',                  zone:'Asia/Yerevan'     },
+  { city:'Стамбул',       country:'Турция',                   zone:'Europe/Istanbul'  },
+  { city:'Тбилиси',       country:'Грузия',                   zone:'Asia/Tbilisi'     },
+  { city:'Тегеран',       country:'Иран',                     zone:'Asia/Tehran'      },
+  { city:'Тель-Авив',     country:'Израиль',                  zone:'Asia/Jerusalem'   },
+  { city:'Эр-Рияд',       country:'Саудовская Аравия',        zone:'Asia/Riyadh'      },
+  // Азия
+  { city:'Бангкок',       country:'Таиланд',                  zone:'Asia/Bangkok'     },
+  { city:'Гонконг',       country:'Китай',                    zone:'Asia/Hong_Kong'   },
+  { city:'Джакарта',      country:'Индонезия',                zone:'Asia/Jakarta'     },
+  { city:'Карачи',        country:'Пакистан',                 zone:'Asia/Karachi'     },
+  { city:'Куала-Лумпур',  country:'Малайзия',                 zone:'Asia/Kuala_Lumpur'},
+  { city:'Мумбай',        country:'Индия',                    zone:'Asia/Kolkata'     },
+  { city:'Нью-Дели',      country:'Индия',                    zone:'Asia/Kolkata'     },
+  { city:'Пекин',         country:'Китай',                    zone:'Asia/Shanghai'    },
+  { city:'Сеул',          country:'Южная Корея',              zone:'Asia/Seoul'       },
+  { city:'Сингапур',      country:'Сингапур',                 zone:'Asia/Singapore'   },
+  { city:'Ташкент',       country:'Узбекистан',               zone:'Asia/Tashkent'    },
+  { city:'Токио',         country:'Япония',                   zone:'Asia/Tokyo'       },
+  // Америка
+  { city:'Буэнос-Айрес',  country:'Аргентина',                zone:'America/Argentina/Buenos_Aires'},
+  { city:'Ванкувер',      country:'Канада (Тихоокеанское)',   zone:'America/Vancouver'},
+  { city:'Лос-Анджелес',  country:'США (Тихоокеанское)',      zone:'America/Los_Angeles'},
+  { city:'Мехико',        country:'Мексика',                  zone:'America/Mexico_City'},
+  { city:'Нью-Йорк',      country:'США (Восточное)',          zone:'America/New_York' },
+  { city:'Сан-Паулу',     country:'Бразилия',                 zone:'America/Sao_Paulo'},
+  { city:'Торонто',       country:'Канада (Восточное)',        zone:'America/Toronto'  },
+  { city:'Чикаго',        country:'США (Центральное)',         zone:'America/Chicago'  },
+  // Африка
+  { city:'Йоханнесбург',  country:'ЮАР',                      zone:'Africa/Johannesburg'},
+  { city:'Каир',          country:'Египет',                   zone:'Africa/Cairo'     },
+  { city:'Найроби',       country:'Кения',                    zone:'Africa/Nairobi'   },
+  // Океания
+  { city:'Окленд',        country:'Новая Зеландия',           zone:'Pacific/Auckland' },
+  { city:'Сидней',        country:'Австралия',                zone:'Australia/Sydney' },
+];
+
+function getTZOffset(zone) {
+  try {
+    const now = new Date();
+    const a = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }));
+    const b = new Date(now.toLocaleString('en-US', { timeZone: zone }));
+    return Math.round((b - a) / 3600000 * 2) / 2; // round to .5
+  } catch(e) { return 0; }
+}
+function fmtGMT(offset) {
+  if (offset === 0) return 'GMT';
+  const sign = offset > 0 ? '+' : '−';
+  const abs = Math.abs(offset);
+  const h = Math.floor(abs), m = Math.round((abs - h) * 60);
+  return m ? `GMT${sign}${h}:${String(m).padStart(2,'0')}` : `GMT${sign}${h}`;
+}
+function tzBtnLabel(tz) {
+  return `${fmtGMT(getTZOffset(tz.zone))} · ${tz.city}, ${tz.country}`;
+}
+
+tzTarget = null; // 'from' | 'to'
+detectedZone = null;
+
+function openTZSelector(target) {
+  tzTarget = target;
+  document.getElementById('tzTitle').textContent = target === 'from' ? 'Часовой пояс отправления' : 'Часовой пояс прибытия';
+  document.getElementById('tzSearch').value = '';
+  try { detectedZone = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch(e) { detectedZone = null; }
+  renderTZList('');
+  document.getElementById('tzOverlay').classList.add('show');
+  setTimeout(() => document.getElementById('tzSearch').focus(), 50);
+}
+function closeTZOverlay() {
+  document.getElementById('tzOverlay').classList.remove('show');
+  tzTarget = null;
+}
+function selectTZ(tz) {
+  const offset = getTZOffset(tz.zone);
+  const label = tzBtnLabel(tz);
+  if (tzTarget === 'from') {
+    document.getElementById('tranFromUTC').value = offset;
+    document.getElementById('tranFromTZBtn').textContent = label;
+    const toUTC = document.getElementById('tranToUTC');
+    if (!toUTC.value) {
+      document.getElementById('tranToUTC').value = offset;
+      document.getElementById('tranToTZBtn').textContent = label;
+    }
+  } else {
+    document.getElementById('tranToUTC').value = offset;
+    document.getElementById('tranToTZBtn').textContent = label;
+  }
+  closeTZOverlay();
+  updateTranDuration();
+}
+function renderTZList(query) {
+  const q = (query || '').toLowerCase().trim();
+  const el = document.getElementById('tzList');
+  let html = '';
+  const addGroup = (label) => `<div class="tz-group">${label}</div>`;
+  const addItem = (tz, isDetected) => {
+    const offset = getTZOffset(tz.zone);
+    return `<div class="tz-item${isDetected ? ' detected' : ''}" onclick="selectTZ(TZ_DATA.find(t=>t.zone==='${tz.zone}'&&t.city==='${tz.city}'))">
+      <div><div class="tz-city">${tz.city}</div><div class="tz-country">${tz.country}</div></div>
+      <div class="tz-gmt">${fmtGMT(offset)}</div>
+    </div>`;
+  };
+  const matches = (tz) => {
+    if (!q) return true;
+    const gmtStr = fmtGMT(getTZOffset(tz.zone)).toLowerCase();
+    return tz.city.toLowerCase().includes(q) ||
+           tz.country.toLowerCase().includes(q) ||
+           tz.zone.toLowerCase().includes(q) ||
+           gmtStr.includes(q);
+  };
+  if (!q) {
+    // Detected first
+    if (detectedZone) {
+      const det = TZ_DATA.find(t => t.zone === detectedZone);
+      if (det) { html += addGroup('📍 Ваш часовой пояс'); html += addItem(det, true); }
+    }
+    // Destination cities from trip
+    const tripCities = state.trip && state.trip.cities && state.trip.cities.length
+      ? state.trip.cities
+      : (state.trip && state.trip.city ? [state.trip.city] : []);
+    if (tripCities.length) {
+      const destMatches = tripCities.map(name => {
+        const q2 = name.trim().toLowerCase();
+        return TZ_DATA.find(t => t.city.toLowerCase() === q2 || t.city.toLowerCase().includes(q2) || q2.includes(t.city.toLowerCase()));
+      }).filter(Boolean);
+      if (destMatches.length) {
+        html += addGroup(`📍 Маршрут · ${tripCities.join(' · ')}`);
+        destMatches.forEach(t => html += addItem(t));
+      }
+    }
+    // All alphabetical
+    html += addGroup('Все города A–Z');
+    [...TZ_DATA].sort((a,b) => a.city.localeCompare(b.city, 'ru')).forEach(t => html += addItem(t));
+  } else {
+    const results = TZ_DATA.filter(matches).sort((a,b) => a.city.localeCompare(b.city));
+    if (!results.length) html = '<div style="padding:24px;text-align:center;color:var(--text3);font-size:13px">Ничего не найдено</div>';
+    else results.forEach(t => html += addItem(t));
+  }
+  el.innerHTML = html;
+}
+document.getElementById('tzOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('tzOverlay')) closeTZOverlay();
+});
+function onFromUTCInput() { updateTranDuration(); }
+function capFirst(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+
+function applyTZValues(offset, label, target) {
+  const utcId = target === 'from' ? 'tranFromUTC' : 'tranToUTC';
+  const btnId = target === 'from' ? 'tranFromTZBtn' : 'tranToTZBtn';
+  document.getElementById(utcId).value       = offset;
+  document.getElementById(btnId).textContent = label;
+  if (target === 'from' && !document.getElementById('tranToUTC').value) {
+    document.getElementById('tranToUTC').value       = offset;
+    document.getElementById('tranToTZBtn').textContent = label;
+  }
+  updateTranDuration();
+}
+
+async function autoFillTZ(val, target) {
+  const capped = capFirst(val.trim());
+  const inputId = target === 'from' ? 'tranFrom' : 'tranTo';
+  if (capped !== val.trim()) document.getElementById(inputId).value = capped;
+  const q = capped.toLowerCase();
+  if (!q) return;
+
+  // 1. Поиск в локальном TZ_DATA
+  const match = TZ_DATA.find(t => t.city.toLowerCase() === q || t.country.toLowerCase() === q)
+             || TZ_DATA.find(t => t.city.toLowerCase().startsWith(q) || t.country.toLowerCase().startsWith(q))
+             || TZ_DATA.find(t => t.city.toLowerCase().includes(q) || t.country.toLowerCase().includes(q));
+  if (match) {
+    applyTZValues(getTZOffset(match.zone), tzBtnLabel(match), target);
+    return;
+  }
+
+  // 2. Fallback: геокодинг → IANA timezone
+  try {
+    const gr = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(val.trim())}&count=1&language=ru`);
+    const gd = await gr.json();
+    if (gd.results && gd.results.length) {
+      const r = gd.results[0];
+      if (r.timezone) {
+        const offset = getTZOffset(r.timezone);
+        const label  = `${fmtGMT(offset)} · ${r.name}${r.country ? ', ' + r.country : ''}`;
+        applyTZValues(offset, label, target);
+      }
+    }
+  } catch(e) { /* офлайн */ }
+}
+function updateTranDuration() {
+  const fromDate = document.getElementById('tranFromDate').value;
+  const fromTime = document.getElementById('tranFromTime').value;
+  const toTime   = document.getElementById('tranToTime').value;
+  if (fromDate && fromTime && toTime) {
+    const [fh, fm] = fromTime.split(':').map(Number);
+    const [th, tm] = toTime.split(':').map(Number);
+    const crossMidnight = th * 60 + tm <= fh * 60 + fm;
+    const d = new Date(fromDate + 'T00:00:00');
+    if (crossMidnight) d.setDate(d.getDate() + 1);
+    const y = d.getFullYear(), mo = String(d.getMonth()+1).padStart(2,'0'), dy = String(d.getDate()).padStart(2,'0');
+    document.getElementById('tranToDate').value = `${y}-${mo}-${dy}`;
+  }
+  const toDate2  = document.getElementById('tranToDate').value;
+  const fromUTC2 = document.getElementById('tranFromUTC').value;
+  const toUTC2   = document.getElementById('tranToUTC').value;
+  const dur = calcDuration(fromDate, fromTime, fromUTC2, toDate2, toTime, toUTC2);
+  document.getElementById('tranDuration').textContent = dur ? `· ${dur}` : '';
+}
+
+function sortTransport() {
+  (state.transport || []).sort((a, b) => {
+    const ak = (a.fromDate || '9999-99-99') + ' ' + (a.fromTime || '99:99');
+    const bk = (b.fromDate || '9999-99-99') + ' ' + (b.fromTime || '99:99');
+    return ak.localeCompare(bk);
+  });
+}
+function fmtDate(d) {
+  if (!d) return '';
+  const dt = new Date(d + 'T00:00:00');
+  return dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }).replace(' г.', '');
+}
+
+function renderTransportBar() {
+  const bar = document.getElementById('transport-bar');
+  if (!bar) return;
+  sortTransport();
+  const DEP_COLOR = 'var(--blue)', ARR_COLOR = 'var(--accent)';
+  bar.innerHTML = 
+    (state.transport || []).map((seg, i) => {
+    const dur = calcDuration(seg.fromDate, seg.fromTime, seg.fromUTC, seg.toDate, seg.toTime, seg.toUTC);
+    return `
+      <div class="transport-card" onclick="openFlightEdit(${i})" data-seg="${i}">
+        <span class="transport-card-edit">✎</span>
+        <button class="transport-card-drag" onpointerdown="initTransportDrag(event,${i})" onclick="event.stopPropagation()">⠿</button>
+        <div class="tc-route">
+          <div class="tc-end">
+            <div class="tc-time" style="color:${DEP_COLOR}">${esc(seg.fromTime||'—')}</div>
+            <div class="tc-date">${seg.fromDate ? fmtDate(seg.fromDate) : ''}</div>
+            <div class="tc-code">${esc(seg.from||'—')}</div>
+          </div>
+          <div class="tc-arrow">-</div>
+          <div class="tc-end">
+            <div class="tc-time" style="color:${ARR_COLOR}">${esc(seg.toTime||'—')}</div>
+            <div class="tc-date">${seg.toDate ? fmtDate(seg.toDate) : ''}</div>
+            <div class="tc-code">${esc(seg.to||'—')}</div>
+          </div>
+        </div>
+        <div class="tc-label">${dur ? `${dur}` : ''}</div>        
+      </div>`;
+  }).join('');
+}
+
+flightEditIdx = null;
+function openFlightEdit(i) {
+  flightEditIdx = (i === null || i === -1) ? -1 : i;
+  const isNew = flightEditIdx === -1;
+  const cities = (state.trip && state.trip.cities) || [];
+  const dl = document.getElementById('tranCitiesList');
+  if (dl) dl.innerHTML = cities.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  document.getElementById('flightEditTitle').textContent = isNew ? 'Новый маршрут' : 'Редактировать';
+  document.getElementById('flightDeleteBtn').style.display = isNew ? 'none' : '';
+  const seg = isNew ? {} : (state.transport[i] || {});
+  document.getElementById('tranName').value     = seg.name     || '';
+  document.getElementById('tranFrom').value     = seg.from     || '';
+  document.getElementById('tranFromUTC').value  = seg.fromUTC  ?? '';
+  document.getElementById('tranFromTZBtn').textContent = seg.fromTZLabel || (seg.fromUTC != null ? fmtGMT(seg.fromUTC) : '🌍 Выбрать часовой пояс…');
+  document.getElementById('tranFromDate').value = seg.fromDate || '';
+  document.getElementById('tranFromTime').value = seg.fromTime || '';
+  document.getElementById('tranTo').value       = seg.to       || '';
+  document.getElementById('tranToUTC').value    = seg.toUTC    ?? '';
+  document.getElementById('tranToTZBtn').textContent   = seg.toTZLabel   || (seg.toUTC   != null ? fmtGMT(seg.toUTC)   : '🌍 Выбрать часовой пояс…');
+  document.getElementById('tranToDate').value   = seg.toDate   || '';
+  document.getElementById('tranToTime').value   = seg.toTime   || '';
+  updateTranDuration();
+  document.getElementById('flightEditOverlay').classList.add('show');
+  setTimeout(() => document.getElementById('tranName').focus(), 50);
+}
+function closeFlightEdit() {
+  document.getElementById('flightEditOverlay').classList.remove('show');
+  flightEditIdx = null;
+}
+function saveFlightEdit() {
+  if (flightEditIdx === null) return;
+  const seg = {
+    id:       flightEditIdx === -1 ? 'seg_' + Date.now() : ((state.transport[flightEditIdx] || {}).id || 'seg_' + Date.now()),
+    name:     document.getElementById('tranName').value.trim(),
+    from:     document.getElementById('tranFrom').value.trim(),
+    fromUTC:     parseFloat(document.getElementById('tranFromUTC').value) || 0,
+    fromTZLabel: document.getElementById('tranFromTZBtn').textContent,
+    fromDate:    document.getElementById('tranFromDate').value,
+    fromTime:    document.getElementById('tranFromTime').value,
+    to:          document.getElementById('tranTo').value.trim(),
+    toUTC:       parseFloat(document.getElementById('tranToUTC').value) || 0,
+    toTZLabel:   document.getElementById('tranToTZBtn').textContent,
+    toDate:   document.getElementById('tranToDate').value,
+    toTime:   document.getElementById('tranToTime').value,    
+  };
+  if (flightEditIdx === -1) state.transport.push(seg);
+  else state.transport[flightEditIdx] = seg;
+  sortTransport();
+  persist(); closeFlightEdit(); renderTransportBar(); renderHeaderSub();
+}
+function deleteFlight() {
+  if (flightEditIdx === null || flightEditIdx === -1) return;
+  state.transport.splice(flightEditIdx, 1);
+  persist(); closeFlightEdit(); renderTransportBar(); renderHeaderSub();
+}
+document.getElementById('flightEditOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('flightEditOverlay')) closeFlightEdit();
+});
+
+tDrag = null;
+function initTransportDrag(e, i) {
+  e.preventDefault(); e.stopPropagation();
+  const bar = document.getElementById('transport-bar');
+  const cardEl = bar.querySelector(`.transport-card[data-seg="${i}"]`);
+  if (!cardEl) return;
+  const rect = cardEl.getBoundingClientRect();
+  const ghost = cardEl.cloneNode(true);
+  ghost.style.cssText = `position:fixed;width:${rect.width}px;height:${rect.height}px;left:${rect.left}px;top:${rect.top}px;opacity:0.9;pointer-events:none;z-index:1000;box-shadow:0 8px 24px rgba(0,0,0,0.18);border-radius:8px;background:var(--surface);`;
+  document.body.appendChild(ghost);
+  cardEl.style.opacity = '0.3';
+  tDrag = { i, el: cardEl, ghost, ox: e.clientX - rect.left, oy: e.clientY - rect.top };
+  document.addEventListener('pointermove', onTDragMove, { passive: false });
+  document.addEventListener('pointerup', onTDragUp);
+  document.addEventListener('pointercancel', cancelTDrag);
+}
+function onTDragMove(e) {
+  if (!tDrag) return;
+  e.preventDefault();
+  tDrag.ghost.style.left = (e.clientX - tDrag.ox) + 'px';
+  tDrag.ghost.style.top  = (e.clientY - tDrag.oy) + 'px';
+  document.querySelectorAll('.transport-card').forEach(c => { c.style.outline = ''; });
+  tDrag.ghost.style.visibility = 'hidden';
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  tDrag.ghost.style.visibility = '';
+  if (!el) return;
+  const target = el.closest('.transport-card');
+  if (target && target !== tDrag.el) {
+    const r = target.getBoundingClientRect();
+    const before = e.clientX < r.left + r.width / 2;
+    target.style.outline = `2px solid var(--accent)`;
+    target.style.outlineOffset = before ? '-2px 0 -2px -2px' : '0';
+  }
+}
+function onTDragUp(e) {
+  if (!tDrag) return;
+  document.removeEventListener('pointermove', onTDragMove);
+  document.removeEventListener('pointerup', onTDragUp);
+  document.removeEventListener('pointercancel', cancelTDrag);
+  tDrag.ghost.remove();
+  tDrag.el.style.opacity = '';
+  document.querySelectorAll('.transport-card').forEach(c => { c.style.outline = ''; });
+  const fromI = tDrag.i;
+  tDrag = null;
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  if (!el) return;
+  const target = el.closest('.transport-card');
+  if (!target) return;
+  const toI = parseInt(target.dataset.seg);
+  if (isNaN(toI) || toI === fromI) return;
+  const r = target.getBoundingClientRect();
+  reorderFlight(fromI, toI, e.clientX < r.left + r.width / 2);
+}
+function cancelTDrag() {
+  if (!tDrag) return;
+  document.removeEventListener('pointermove', onTDragMove);
+  document.removeEventListener('pointerup', onTDragUp);
+  document.removeEventListener('pointercancel', cancelTDrag);
+  tDrag.ghost.remove();
+  tDrag.el.style.opacity = '';
+  document.querySelectorAll('.transport-card').forEach(c => { c.style.outline = ''; });
+  tDrag = null;
+}
+function reorderFlight(fromI, toI, before) {
+  const seg = state.transport.splice(fromI, 1)[0];
+  let insertAt = toI > fromI ? toI - 1 : toI;
+  if (!before) insertAt++;
+  state.transport.splice(Math.max(0, Math.min(insertAt, state.transport.length)), 0, seg);
+  persist(); renderTransportBar();
+}
+
+const BAG_DEFAULTS = {
+  hold:     { icon: '🧳', label: 'Багаж',       weight: '30 кг', color: '#4fc8a0' },
+  cabin:    { icon: '🎒', label: 'Кабинный',     weight: '8 кг',  color: '#007aff' },
+  personal: { icon: '👜', label: 'Личная сумка', weight: '4 кг',  color: '#a78bfa' },
+};
+const BAG_COLOR_PALETTE = ['#e06fa0','#5b9cf6','#4fc8a0','#e8a945','#a78bfa','#fb923c','#6abf69','#f47272'];
+function bagMeta(id) { return { ...BAG_DEFAULTS[id], ...(state.bags || {})[id] }; }
+function bagColor(id) { return bagMeta(id).color || '#8e8e93'; }
+function bagSelectFull(selectedId) {
+  const bags = state.bags || BAG_DEFAULTS;
+  return '<option value="">—</option>' + Object.keys(bags)
+    .filter(id => !bagMeta(id).deleted)
+    .map(id => { const b = bagMeta(id); return `<option value="${id}"${id===selectedId?' selected':''}>${esc(b.icon||'')} ${esc(b.label||id)}</option>`; })
+    .join('');
+}
+function bagSelectEmojis(selectedId) {
+  const bags = state.bags || BAG_DEFAULTS;
+  return '<option value="">—</option>' + Object.keys(bags)
+    .filter(id => !bagMeta(id).deleted)
+    .map(id => { const b = bagMeta(id); return `<option value="${id}"${id===selectedId?' selected':''}>${esc(b.icon||'📦')} ${esc(b.label||id)}</option>`; })
+    .join('');
+}
+
+function renderLuggageBar() {
+  const bar = document.getElementById('luggage-bar');
+  if (!bar) return;
+  const bags = state.bags || BAG_DEFAULTS;
+  bar.innerHTML = 
+    Object.keys(bags).filter(id => !bagMeta(id).deleted).map(id => {
+      const b = bagMeta(id);
+      return `<div class="lug" id="lug-${id}" onclick="openBagView('${id}')">
+        <div class="lug-icon">${esc(b.icon||'📦')}</div>
+        <div class="lug-val" style="color:${safeColor(bagColor(id),'#8e8e93')}">${esc(b.weight||'')}</div>
+        <div class="lug-label">${esc(b.label||id)}</div>
+      </div>`;
+    }).join('');
+}
+bagViewType = null;
+bagViewMode = 'view'; // 'view' | 'add'
+
+function openBagView(type) {
+  bagViewType = type;
+  bagViewMode = 'view';
+  document.getElementById('bagAddBtn').textContent = '＋';
+  renderBagView();
+  document.getElementById('bagViewOverlay').classList.add('show');
+}
+function closeBagView() {
+  document.getElementById('bagViewOverlay').classList.remove('show');
+  bagViewType = null;
+  bagViewMode = 'view';
+}
+function toggleBagAddMode() {
+  bagViewMode = bagViewMode === 'view' ? 'add' : 'view';
+  const btn = document.getElementById('bagAddBtn');
+  if (bagViewMode === 'add') {
+    btn.textContent = '←';
+    btn.title = 'Назад';
+    renderBagAddItems();
+  } else {
+    btn.textContent = '＋';
+    btn.title = 'Добавить вещи';
+    renderBagView();
+  }
+}
+function renderBagAddItems() {
+  const unassigned = [], other = [];
+  state.sections.forEach((s, si) => {
+    s.items.forEach(item => {
+      if (item.bag === bagViewType) return;
+      const entry = { si, item, si_title: s.title, si_icon: s.icon };
+      if (!item.bag) unassigned.push(entry);
+      else other.push({ ...entry, bagLabel: bagMeta(item.bag).label });
+    });
+  });
+  let html = '';
+  if (unassigned.length) {
+    html += `<div class="bv-section-title"><span>📋 Без сумки</span><span class="bv-count">${unassigned.length}</span></div>`;
+    unassigned.forEach(({ si, item, si_title, si_icon }) => {
+      html += `<div class="bv-item" onclick="assignToBag(${si},'${item.id}')">
+        <div class="bv-name">${esc(item.name)}${item.qty ? ` <span class="item-qty-display">${esc(item.qty)}</span>` : ''}
+          <div class="item-note">${esc(si_icon)} ${esc(si_title)}</div>
+        </div>
+        <span style="font-size:14px;color:var(--accent);flex-shrink:0">＋</span>
+      </div>`;
+    });
+  }
+  if (other.length) {
+    html += `<div class="bv-section-title"><span>🏷 В других сумках</span><span class="bv-count">${other.length}</span></div>`;
+    other.forEach(({ si, item, si_title, si_icon, bagLabel }) => {
+      html += `<div class="bv-item" onclick="assignToBag(${si},'${item.id}')">
+        <div class="bv-name">${esc(item.name)}${item.qty ? ` <span class="item-qty-display">${esc(item.qty)}</span>` : ''}
+          <div class="item-note">${esc(si_icon)} ${esc(si_title)} · ${btag(item.bag)}</div>
+        </div>
+        <span style="font-size:14px;color:var(--accent);flex-shrink:0">＋</span>
+      </div>`;
+    });
+  }
+  if (!html) html = '<div style="text-align:center;padding:32px;color:var(--text3);font-size:13px">Все вещи уже в этой сумке</div>';
+  document.getElementById('bagViewContent').innerHTML = html;
+  document.getElementById('bagViewStats').textContent = '';
+}
+function assignToBag(si, id) {
+  const item = state.sections[si].items.find(i => i.id === id);
+  if (!item) return;
+  item.bag = bagViewType;
+  persist();
+  renderBagAddItems();
+  render();
+  updateStats();
+  renderLuggageBar();
+}
+document.getElementById('bagViewOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('bagViewOverlay')) closeBagView();
+});
+
+bagEditType = null;
+function openBagEdit() {
+  bagEditType = bagViewType;
+  const b = bagMeta(bagEditType);
+  document.getElementById('bagEditTitle').textContent = `Редактировать: ${b.label}`;
+  document.getElementById('bagEditIcon').value   = b.icon || '';
+  document.getElementById('bagEditLabel').value  = b.label || '';
+  document.getElementById('bagEditWeight').value = b.weight || '';
+  document.getElementById('bagDelBtn').style.display = '';
+  document.getElementById('bagTemplateField').style.display = 'none';
+  document.getElementById('bagEditOverlay').classList.add('show');
+  setTimeout(() => document.getElementById('bagEditLabel').focus(), 50);
+}
+function openAddBag() {
+  bagEditType = '__new__';
+  document.getElementById('bagEditTitle').textContent = 'Новая сумка';
+  document.getElementById('bagEditIcon').value   = '';
+  document.getElementById('bagEditLabel').value  = '';
+  document.getElementById('bagEditWeight').value = '';
+  document.getElementById('bagTemplate').value   = '';
+  document.getElementById('bagDelBtn').style.display = 'none';
+  document.getElementById('bagTemplateField').style.display = '';
+  document.getElementById('bagEditOverlay').classList.add('show');
+  setTimeout(() => document.getElementById('bagTemplate').focus(), 50);
+}
+function applyBagTemplate(value) {
+  if (!value) return;
+  const def = BAG_DEFAULTS[value];
+  if (!def) return;
+  document.getElementById('bagEditIcon').value   = def.icon;
+  document.getElementById('bagEditLabel').value  = def.label;
+  document.getElementById('bagEditWeight').value = def.weight;
+  document.getElementById('bagEditLabel').focus();
+}
+function closeBagEdit() {
+  document.getElementById('bagEditOverlay').classList.remove('show');
+  bagEditType = null;
+}
+function saveBagEdit() {
+  if (!bagEditType) return;
+  if (!state.bags) state.bags = {};
+  const icon   = document.getElementById('bagEditIcon').value.trim();
+  const label  = document.getElementById('bagEditLabel').value.trim();
+  const weight = document.getElementById('bagEditWeight').value.trim();
+  if (bagEditType === '__new__') {
+    if (!label) { document.getElementById('bagEditLabel').focus(); return; }
+    const id = 'bag_' + Date.now();
+    const colorIdx = Object.keys(state.bags).length % BAG_COLOR_PALETTE.length;
+    state.bags[id] = { icon: icon || '📦', label, weight: weight || '—', color: BAG_COLOR_PALETTE[colorIdx] };
+    persist(); closeBagEdit(); renderLuggageBar(); updateStats(); renderHeaderSub();
+  } else {
+    const def = BAG_DEFAULTS[bagEditType] || {};
+    state.bags[bagEditType] = { ...bagMeta(bagEditType), icon: icon || def.icon, label: label || def.label, weight: weight || def.weight };
+    persist(); closeBagEdit(); renderLuggageBar(); updateStats(); renderBagView(); render(); renderHeaderSub();
+  }
+}
+document.getElementById('bagEditOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('bagEditOverlay')) closeBagEdit();
+});
+function deleteBag() {
+  if (!bagEditType) return;
+  const b = bagMeta(bagEditType);
+  if (!confirm(`Удалить сумку "${b.label}"? Метки у вещей будут сняты.`)) return;
+  if (!state.bags) state.bags = { ...BAG_DEFAULTS };
+  state.bags[bagEditType] = { ...b, deleted: true };
+  state.sections.forEach(s => s.items.forEach(i => { if (i.bag === bagEditType) i.bag = ''; }));
+  persist();
+  closeBagEdit();
+  closeBagView();
+  renderLuggageBar();
+  updateStats();
+  renderHeaderSub();
+  render();
+}
+
+function copyBagView() {
+  if (!bagViewType) return;
+  const meta = bagMeta(bagViewType);
+  const lines = [`${meta.icon} ${meta.label} · ${meta.weight}`];
+  state.sections.forEach(s => {
+    const items = s.items.filter(it => it.bag === bagViewType);
+    if (!items.length) return;
+    lines.push(`\n${s.icon} ${s.title}`);
+    items.forEach((it, i) => {
+      let line = `${i + 1}. ${it.name}`;
+      if (it.qty) line += ` ${it.qty}`;
+      if (it.note) line += ` — ${it.note}`;
+      lines.push(line);
+    });
+  });
+  const text = lines.join('\n');
+  const btn = document.getElementById('bagCopyBtn');
+  function showCopied() {
+    btn.textContent = '✓';
+    setTimeout(() => { btn.textContent = '⎘'; }, 2000);
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(showCopied).catch(() => fallbackCopy(text, showCopied));
+  } else {
+    fallbackCopy(text, showCopied);
+  }
+}
+
+function renderBagView() {
+  if (!bagViewType) return;
+  const meta = bagMeta(bagViewType);
+  let total = 0, checked = 0, html = '';
+  state.sections.forEach((s, si) => {
+    const items = s.items.filter(it => it.bag === bagViewType);
+    if (!items.length) return;
+    html += `<div class="bv-section-title"><span>${s.icon} ${esc(s.title)}</span><span class="bv-count">${items.length}</span></div>`;
+    items.forEach(item => {
+      total++;
+      if (item.checked) checked++;
+      html += `<div class="bv-item${item.checked ? ' checked' : ''}" onclick="toggleBagItem(${si},'${item.id}')">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="bv-name">${esc(item.name)}${item.qty ? ` <span class="item-qty-display">${esc(item.qty)}</span>` : ''}${item.note ? `<div class="item-note">${esc(item.note)}</div>` : ''}</div>
+        <button class="bv-del-btn" onclick="event.stopPropagation();deleteBagItem(${si},'${item.id}')" title="Удалить">✕</button>
+      </div>`;
+    });
+  });
+  if (!html) html = '<div style="text-align:center;padding:32px;color:var(--text3);font-size:13px">Сумка ещё пустая</div>';
+  document.getElementById('bagViewTitle').textContent = `${meta.icon} ${meta.label} · ${meta.weight}`;
+  document.getElementById('bagViewStats').textContent = `${checked} из ${total} собрано`;
+  if (total) html += `<div style="padding:10px 14px 6px"><button class="bv-clear-btn" onclick="clearBagTags()">✕ Удалить все вещи из этой сумки</button></div>`;
+  document.getElementById('bagViewContent').innerHTML = html;
+}
+
+function toggleBagItem(si, id) {
+  const item = state.sections[si].items.find(i => i.id === id);
+  if (item) { item.checked = !item.checked; persist(); renderBagView(); render(); }
+}
+function deleteBagItem(si, id) {
+  const item = state.sections[si].items.find(i => i.id === id);
+  if (item) { item.bag = ''; persist(); renderBagView(); render(); }
+}
+function clearBagTags() {
+  const meta = bagMeta(bagViewType);
+  if (!confirm(`Снять метку "${meta.label}" у всех вещей?`)) return;
+  state.sections.forEach(s => s.items.forEach(i => { if (i.bag === bagViewType) i.bag = ''; }));
+  persist(); renderBagView(); render();
+}
+
+const COLOR_LIST = [
+  { bg:'#e06fa025', color:'#e06fa0' },
+  { bg:'#5b9cf625', color:'#5b9cf6' },
+  { bg:'#4fc8a025', color:'#4fc8a0' },
+  { bg:'#e8a94525', color:'#e8a945' },
+  { bg:'#a78bfa25', color:'#a78bfa' },
+  { bg:'#fb923c25', color:'#fb923c' },
+  { bg:'#6abf6925', color:'#6abf69' },
+  { bg:'#f4727225', color:'#f47272' },
+];
+selEmoji = '📦';
+selColorIdx = 0;
+editingSectionIdx = null;
+pendingSectionType = 'items';
+
+function openAddSectionForm(type = 'items') {
+  editingSectionIdx = null;
+  const isAction = type === 'action';
+  selEmoji = isAction ? '✅' : '📦'; selColorIdx = 0;
+  document.getElementById('sectionIcon').value = '';
+  document.getElementById('sectionIcon').style.display = 'none';
+  document.getElementById('sectionTitle').value = '';
+  document.getElementById('emojiSelect').value = isAction ? '✅' : '📦';
+  document.querySelector('.add-modal-title').textContent = isAction ? 'Новый список задач' : 'Новый список вещей';
+  document.querySelector('[onclick="submitAddSectionForm()"]').textContent = 'Создать';
+  document.getElementById('sectionDelBtn').style.display = 'none';
+  pendingSectionType = type;
+  const defType = document.querySelector(`input[name="sectionType"][value="${type}"]`);
+  if (defType) defType.checked = true;
+  document.getElementById('addSectionOverlay').classList.add('show');
+  setTimeout(() => document.getElementById('sectionTitle').focus(), 50);
+}
+
+function openEditSectionForm(si) {
+  const s = state.sections[si];
+  if (!s) return;
+  editingSectionIdx = si;
+  selEmoji = s.icon || '📦';
+  // Find closest color
+  selColorIdx = COLOR_LIST.findIndex(c => c.bg === s.bg) ?? 0;
+  if (selColorIdx < 0) selColorIdx = 0;
+  document.getElementById('sectionIcon').value = '';
+  document.getElementById('sectionTitle').value = s.title || '';
+  document.getElementById('emojiSelect').value = s.icon || '';
+  document.getElementById('sectionIcon').style.display = s.icon ? 'none' : '';
+  document.querySelector('.add-modal-title').textContent = 'Редактировать список';
+  document.querySelector('[onclick="submitAddSectionForm()"]').textContent = 'Сохранить';
+  document.getElementById('sectionDelBtn').style.display = '';
+  document.getElementById('addSectionOverlay').classList.add('show');
+  setTimeout(() => document.getElementById('sectionTitle').focus(), 50);
+}
+function closeAddSectionForm() {
+  document.getElementById('addSectionOverlay').classList.remove('show');
+}
+function deleteSectionFromModal() {
+  if (editingSectionIdx === null) return;
+  const si = editingSectionIdx;
+  closeAddSectionForm();
+  deleteSection(si);
+}
+function renderColorGrid() {
+  document.getElementById('colorGrid').innerHTML = COLOR_LIST.map((c, i) =>
+    `<div class="color-swatch${i===selColorIdx?' selected':''}" style="background:${c.color}" onclick="selectColor(${i})"></div>`
+  ).join('');
+}
+function updateSectionPreview() {
+  const custom = document.getElementById('sectionIcon').value.trim();
+  const icon = custom || selEmoji || '📦';
+  const title = document.getElementById('sectionTitle').value.trim() || 'Название списка';
+  const c = COLOR_LIST[selColorIdx];
+  document.getElementById('previewIcon').textContent = icon;
+  document.getElementById('previewIcon').style.background = c.bg;
+  document.getElementById('previewTitle').textContent = title;
+  document.getElementById('previewTitle').style.color = title === 'Название списка' ? 'var(--text3)' : 'var(--text)';
+}
+function selectEmoji(e) {
+  selEmoji = e;
+  document.getElementById('sectionIcon').value = '';
+  updateSectionPreview();
+}
+function onCustomEmoji(val) {
+  if (val.trim()) {
+    selEmoji = '';
+    document.getElementById('emojiSelect').value = '';
+  }
+  updateSectionPreview();
+}
+function selectColor(i) {
+  selColorIdx = i;
+  renderColorGrid();
+  updateSectionPreview();
+}
+function submitAddSectionForm() {
+  const custom = document.getElementById('sectionIcon').value.trim();
+  const icon  = custom || selEmoji || '📦';
+  const title = cap(document.getElementById('sectionTitle').value.trim());
+  if (!title) { document.getElementById('sectionTitle').focus(); return; }
+  if (editingSectionIdx === null) {
+    const dupIdx = state.sections.findIndex(s => s.title.trim().toLowerCase() === title.toLowerCase() && s.type === (pendingSectionType || 'items'));
+    if (dupIdx !== -1) {
+      openSections.add(dupIdx);
+      closeAddSectionForm(); render();
+      setTimeout(() => { const inp = document.getElementById('add-input-' + dupIdx); if (inp) inp.focus(); }, 50);
+      return;
+    }
+  }
+  const randomC = COLOR_LIST[Math.floor(Math.random() * COLOR_LIST.length)];
+  const existingC = editingSectionIdx !== null ? COLOR_LIST.find(c => c.bg === state.sections[editingSectionIdx].bg) || randomC : null;
+  const c = editingSectionIdx !== null ? (existingC || randomC) : randomC;
+  if (editingSectionIdx !== null) {
+    const s = state.sections[editingSectionIdx];
+    s.icon  = icon;
+    s.bg    = c.bg;
+    s.title = title;
+  } else {
+    const sType = pendingSectionType || 'items';
+    state.sections.push({ icon, bg: c.bg, title, meta: '', items: [], type: sType });
+    const newSi = state.sections.length - 1;
+    openSections.add(newSi);
+    persist(); closeAddSectionForm(); render();
+    setTimeout(() => {
+      const inp = document.getElementById('add-input-' + newSi);
+      if (inp) inp.focus();
+    }, 50);
+    return;
+  }
+  persist(); closeAddSectionForm(); render();
+}
+document.getElementById('addSectionOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('addSectionOverlay')) closeAddSectionForm();
+});
+
+function toggleTransportCollapse(header) {
+  const body = header.nextElementSibling;
+  body.classList.toggle('open');
+  header.querySelector('.transport-collapse-chevron').style.transform =
+    body.classList.contains('open') ? 'rotate(180deg)' : '';
+}
+
+function toggleSection(header, si) {
+  const body = header.nextElementSibling;
+  body.classList.toggle('open');
+  header.querySelector('.section-chevron').style.transform =
+    body.classList.contains('open') ? 'rotate(180deg)' : '';
+  if (body.classList.contains('open')) openSections.add(si);
+  else openSections.delete(si);
+}
+
+function updateStats() {
+  let total = 0, checked = 0;
+  const bt = {}, bc = {};
+  Object.keys(state.bags || BAG_DEFAULTS).forEach(id => { bt[id] = 0; bc[id] = 0; });
+  state.sections.forEach(s => s.items.forEach(i => {
+    total++; if (i.checked) checked++;
+    if (i.bag && bt.hasOwnProperty(i.bag)) { bt[i.bag]++; if (i.checked) bc[i.bag]++; }
+  }));
+  const hasItems = state.sections.some(s => s.type !== 'action');
+  document.getElementById('items-stats').style.display = hasItems ? '' : 'none';
+  document.getElementById('items-reset').style.display = hasItems ? '' : 'none';
+  document.getElementById('items-onboarding').style.display = hasItems ? 'none' : '';
+  const qaItems = document.getElementById('quick-actions');
+  if (qaItems && document.getElementById('tab-items')?.classList.contains('active'))
+    qaItems.style.display = hasItems ? '' : 'none';
+  document.getElementById('total-count').textContent = total;
+  document.getElementById('checked-count').textContent = checked;
+  document.getElementById('left-count').textContent = total - checked;
+  const pct = total ? Math.round(checked / total * 100) : 0;
+  document.getElementById('bar').style.width = pct + '%';
+  Object.keys(bt).forEach(bag => {
+    const el = document.getElementById('lug-' + bag);
+    if (!el) return;
+    const t = bt[bag], c = bc[bag];
+    const pct = t ? Math.round(c / t * 100) : 0;
+    const col = bagColor(bag);
+    el.style.background = pct > 0
+      ? `linear-gradient(to top, ${col}28 ${pct}%, var(--surface) ${pct}%)`
+      : 'var(--surface)';
+  });
+}
+
+function renderTodoSection() {
+  const todoContainer = document.getElementById('todo-container');
+  if (!todoContainer) return;
+  todoContainer.innerHTML = '';
+  const hasTasks = state.sections.some(s => s.type === 'action');
+  document.getElementById('tasks-onboarding').style.display = hasTasks ? 'none' : '';
+  const qaTasks = document.getElementById('quick-actions');
+  if (qaTasks && document.getElementById('tab-tasks')?.classList.contains('active'))
+    qaTasks.style.display = hasTasks ? '' : 'none';
+  state.sections.forEach((s, si) => {
+    if (s.type !== 'action') return;
+    const isOpen = openSections.has(si);
+    const taskTotal = s.items.length;
+    const taskChecked = s.items.filter(i => i.checked).length;
+    const taskPct = taskTotal ? Math.round(taskChecked / taskTotal * 100) : 0;
+    const taskMeta = taskTotal ? `${taskChecked}/${taskTotal}` : '0 задач';
+    const itemsHtml = s.items.map(item => `
+      <div class="item${item.checked ? ' checked' : ''}" id="item-${item.id}">
+        <button class="drag-handle" onpointerdown="initDrag(event,${si},'${item.id}')">⠿</button>
+        <div class="checkbox" onclick="toggleItem(${si},'${item.id}')"><span class="checkmark">✓</span></div>
+        <div class="item-content" onclick="toggleItem(${si},'${item.id}')">
+          <div class="item-name">${esc(item.name)}</div>
+          ${item.note ? `<div class="item-note">${esc(item.note)}</div>` : ''}
+        </div>
+        <div class="item-actions">
+          <button class="action-btn" onclick="openEdit(${si},'${item.id}')">✎</button>
+          <button class="action-btn del" onclick="deleteItem(${si},'${item.id}')">✕</button>
+        </div>
+      </div>`).join('');
+    const div = document.createElement('div');
+    div.className = 'section';
+    div.dataset.si = si;
+    const taskDone = taskTotal > 0 && taskPct === 100;
+    div.innerHTML = `
+      <div class="section-header" onclick="toggleSection(this,${si})" style="${taskDone ? 'background:rgba(52,199,89,0.08)' : taskTotal === 0 ? 'background:#e8e8ed' : ''}">
+        <button class="drag-handle" onpointerdown="initSectionDrag(event,${si})" onclick="event.stopPropagation()">⠿</button>
+        <div class="section-icon" style="background:${taskDone ? 'rgba(52,199,89,0.15)' : safeColor((s.bg||'').slice(0,7),'#8e8e93')+'15'}">${taskDone ? '✓' : esc(s.icon)}</div>
+        <span class="section-title">${esc(s.title)}</span>
+        <span class="section-meta">${taskMeta}</span>
+        <button class="section-del-btn" style="color:var(--text3);font-size:12px" onclick="event.stopPropagation();openEditSectionForm(${si})" title="Редактировать список">✎</button>
+        <span class="section-chevron" style="transform:${isOpen?'rotate(180deg)':''}">▾</span>
+        <div class="section-header-progress" style="width:${taskPct}%;background:${taskDone ? '#34c759' : safeColor((s.bg||'').slice(0,7),'#8e8e93')}"></div>
+      </div>
+      <div class="section-body${isOpen ? ' open' : ''}">
+        ${itemsHtml}
+        <button class="copy-btn" id="copy-btn-${si}" onclick="copySection(${si})">⎘ Скопировать список</button>
+        <div class="add-item-row">
+          <input class="add-input" id="add-input-${si}" placeholder="Добавить задачу..." onkeydown="if(event.key==='Enter')addItem(${si})">
+          <button class="add-btn" onclick="addItem(${si})">+</button>
+        </div>
+      </div>`;
+    todoContainer.appendChild(div);
+  });
+}
+
+function openTodoAddForm() {
+  const idx = state.sections.findIndex(s => s.sectionId === 'todo' || s.type === 'action');
+  if (idx === -1) return;
+  openSections.add(idx);
+  render();
+  setTimeout(() => { const inp = document.getElementById('add-input-' + idx); if (inp) inp.focus(); }, 50);
+}
+
+function clearAll() {
+  const ids = ['clearItems','clearTasks','clearEvents','clearTransport','clearBags','clearTrip'];
+  ids.forEach(id => { document.getElementById(id).checked = true; });
+  setTimeout(() => {
+    if (!confirm('Удалить все данные? Это действие нельзя отменить.')) {
+      ids.forEach(id => { document.getElementById(id).checked = false; });
+      return;
+    }
+    confirmClearData();
+  }, 50);
+}
+
+function openClearDataModal() {
+  document.getElementById('clearItems').checked = false;
+  document.getElementById('clearTasks').checked = false;
+  document.getElementById('clearEvents').checked = false;
+  document.getElementById('clearTransport').checked = false;
+  document.getElementById('clearBags').checked = false;
+  document.getElementById('clearTrip').checked = false;
+  document.getElementById('clearDataOverlay').classList.add('show');
+}
+function closeClearDataModal() {
+  document.getElementById('clearDataOverlay').classList.remove('show');
+}
+function confirmClearData() {
+  const delItems     = document.getElementById('clearItems').checked;
+  const delTasks     = document.getElementById('clearTasks').checked;
+  const delEvents    = document.getElementById('clearEvents').checked;
+  const delTransport = document.getElementById('clearTransport').checked;
+  const delBags      = document.getElementById('clearBags').checked;
+  const delTrip      = document.getElementById('clearTrip').checked;
+  if (!delItems && !delTasks && !delEvents && !delTransport && !delBags && !delTrip) { closeClearDataModal(); return; }
+  if (delItems)     state.sections  = state.sections.filter(s => s.type === 'action');
+  if (delTasks)     state.sections  = state.sections.filter(s => s.type !== 'action');
+  if (delEvents)    state.events    = [];
+  if (delTransport) state.transport = [];
+  if (delBags) {
+    state.bags = {};
+    state.sections.forEach(s => s.items.forEach(i => { i.bag = ''; }));
+  }
+  if (delTrip)      state.trip      = { city: '', start: '', end: '', cities: [] };
+  persist(); closeClearDataModal(); render(); renderEvents(); renderTransportBar(); renderLuggageBar(); renderHeaderSub();
+}
+document.getElementById('clearDataOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('clearDataOverlay')) closeClearDataModal();
+});
+
+function resetAll() {
+  if (!confirm('Сбросить все отметки у вещей?\nЗадачи останутся без изменений.')) return;
+  state.sections.forEach(s => {
+    if (s.type !== 'action') s.items.forEach(i => i.checked = false);
+  });
+  persist(); render();
+}
+
+// ── Install PWA ──────────────────────────────────────────
+let deferredInstallPrompt = null;
+const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+if (isStandalone) document.getElementById('install-btn').style.display = 'none';
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+});
+function handleInstall() {
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.then(() => {
+      deferredInstallPrompt = null;
+      document.getElementById('install-btn').style.display = 'none';
+    });
+  } else if (isIOS) {
+    document.getElementById('iosInstallOverlay').classList.add('show');
+  } else {
+    document.getElementById('androidInstallOverlay').classList.add('show');
+  }
+}
+function closeIosInstall() { document.getElementById('iosInstallOverlay').classList.remove('show'); }
+function closeAndroidInstall() { document.getElementById('androidInstallOverlay').classList.remove('show'); }
+function openAppInfo() { document.getElementById('appInfoOverlay').classList.add('show'); }
+function closeAppInfo() { document.getElementById('appInfoOverlay').classList.remove('show'); }
+
+renderLuggageBar();
+renderTransportBar();
+render();
+renderHeaderSub();
+renderEvents();
+
+// ── Events ──────────────────────────────────────────────
+function renderEvents() {
+  const c = document.getElementById('events-container');
+  if (!c) return;
+  const events = (state.events || []).slice().sort((a, b) => {
+    const da = (a.date || '') + (a.time || '');
+    const db = (b.date || '') + (b.time || '');
+    return da < db ? -1 : da > db ? 1 : 0;
+  });
+  const hasEvents = events.length > 0;
+  document.getElementById('events-onboarding').style.display = hasEvents ? 'none' : '';
+  const qaEvents = document.getElementById('quick-actions');
+  if (qaEvents && document.getElementById('tab-events')?.classList.contains('active'))
+    qaEvents.style.display = hasEvents ? '' : 'none';
+  if (!hasEvents) { c.innerHTML = ''; return; }
+  let html = '';
+  let lastDay = '';
+  const days = ['вс','пн','вт','ср','чт','пт','сб'];
+  events.forEach(ev => {
+    const day = ev.date || '';
+    if (day !== lastDay) {
+      lastDay = day;
+      let label = day;
+      if (day) {
+        const d = new Date(day + 'T00:00:00');
+        label = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }) + ' · ' + days[d.getDay()];
+      }
+      html += `<div class="event-day">${label || 'Без даты'}</div>`;
+    }
+    html += `<div class="event-card" onclick="openEventForm('${ev.id}')">
+      <div class="event-time-col">
+        <div class="event-time">${ev.time || '—'}</div>        
+      </div>
+      <div class="event-body">
+        <div class="event-title">${esc(ev.title)}</div>
+        ${ev.note ? `<div class="event-note">${esc(ev.note)}</div>` : ''}
+      </div>
+    </div>`;
+  });
+  c.innerHTML = html;
+  if (document.getElementById('tab-events')?.classList.contains('active')) renderQuickActions('events');
+}
+
+function openEventForm(id) {
+  eventEditId = id;
+  const ev = id ? (state.events || []).find(e => e.id === id) : null;
+  document.getElementById('evTitle').value = ev ? ev.title : '';
+  document.getElementById('evDate').value  = ev ? (ev.date || '') : '';
+  document.getElementById('evTime').value  = ev ? (ev.time || '') : '';
+  document.getElementById('evNote').value  = ev ? (ev.note || '') : '';
+  document.getElementById('evDelBtn').style.display = ev ? '' : 'none';
+  document.querySelector('#eventOverlay h3').textContent = ev ? 'Редактировать' : 'Новое событие';
+  document.getElementById('eventOverlay').classList.add('show');
+  setTimeout(() => document.getElementById('evTitle').focus(), 50);
+}
+function closeEventForm() {
+  document.getElementById('eventOverlay').classList.remove('show');
+  eventEditId = null;
+}
+function submitEventForm() {
+  const title = cap(document.getElementById('evTitle').value.trim());
+  if (!title) { document.getElementById('evTitle').focus(); return; }
+  const date = document.getElementById('evDate').value;
+  const time = document.getElementById('evTime').value;
+  const note = document.getElementById('evNote').value.trim();
+  if (!state.events) state.events = [];
+  if (eventEditId) {
+    const ev = state.events.find(e => e.id === eventEditId);
+    if (ev) { ev.title = title; ev.date = date; ev.time = time; ev.note = note; }
+  } else {
+    state.events.push({ id: uid(), title, date, time, note });
+  }
+  persist(); closeEventForm(); renderEvents();
+}
+function deleteEvent() {
+  if (!eventEditId) return;
+  state.events = state.events.filter(e => e.id !== eventEditId);
+  persist(); closeEventForm(); renderEvents();
+}
+document.getElementById('eventOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('eventOverlay')) closeEventForm();
+});
+
+
+function renderQuickActions(tab) {
+  const box = document.getElementById('quick-actions');
+  if (!box) return;
+
+  const actions = quickActions[tab] || [];
+
+  box.innerHTML = actions
+    .map((a, i) => ({ a, i }))
+    .filter(({ a }) => !a.visible || a.visible())
+    .map(({ a, i }) => `
+    <button class="qa-btn ${a.className || ''}" onclick="runQuickAction('${tab}', ${i})">
+      ${esc(a.label)}
+    </button>
+  `).join('');
+}
+
+function runQuickAction(tab, index) {
+  const action = quickActions[tab]?.[index]?.action;
+  if (action) action();
+}
+
+</script>
+<datalist id="tranCitiesList"></datalist>
+</body>
+</html>
