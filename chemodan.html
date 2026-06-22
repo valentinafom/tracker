@@ -961,11 +961,7 @@ function loadState() {
     if (!('weather' in st)) st.weather = null;
     if (!st.trip.cityDates) st.trip.cityDates = {};
     if (st.trip.activeCityIdx === undefined) st.trip.activeCityIdx = 0;
-    if (!st.bags) st.bags = {
-      hold:     { icon: '🧳', label: 'Багаж',       weight: '30 кг' },
-      cabin:    { icon: '🎒', label: 'Кабинный',     weight: '8 кг'  },
-      personal: { icon: '👜', label: 'Личная сумка', weight: '4 кг'  },
-    };
+    if (!st.bags) st.bags = null;
     if (!st.events) st.events = [];
     return st;
   } catch(e) { return buildInitialState(); }
