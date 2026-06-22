@@ -344,9 +344,15 @@ body:has(.bag-view-overlay.show) {
     <div style="display:flex;align-items:center;justify-content:space-between">
       <div class="header-title">Поездка</div>
       <div style="display:flex;gap:4px;align-items:center">
-        <button onclick="openAppInfo()" style="background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:4px;line-height:1;display:flex;align-items:center;justify-content:center;width:28px;height:28px;font-family:inherit">ℹ︎</button>
-        <button id="clear-data-btn" onclick="openClearDataModal()" style="background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:4px;line-height:1;display:flex;align-items:center;justify-content:center;width:28px;height:28px">⛌</button>
-        <button id="install-btn" onclick="handleInstall()" style="background:none;border:none;color:var(--text3);font-size:25px;cursor:pointer;padding:4px;line-height:1;display:flex;align-items:center;justify-content:center;width:28px;height:28px;font-family:inherit">⌂</button>
+        <button onclick="openAppInfo()" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:4px;display:flex;align-items:center;justify-content:center;width:28px;height:28px">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="11" x2="12" y2="16"/><circle cx="12" cy="7.5" r="1" fill="currentColor" stroke="none"/></svg>
+        </button>
+        <button id="clear-data-btn" onclick="openClearDataModal()" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:4px;display:flex;align-items:center;justify-content:center;width:28px;height:28px">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 13a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 6V4h4v2"/></svg>
+        </button>
+        <button id="install-btn" onclick="handleInstall()" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:4px;display:flex;align-items:center;justify-content:center;width:28px;height:28px">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12L12 3l9 9"/><path d="M5 10v9a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1v-9"/></svg>
+        </button>
         
       </div>
     </div>
@@ -523,7 +529,7 @@ body:has(.bag-view-overlay.show) {
       <button id="tranFromTZBtn">🌍</button>
       <input type="hidden" id="tranFromUTC">
     </div>
-    <div class="edit-field"><div class="edit-label">Куда</div><input class="edit-input" id="tranTo" type="text" placeholder="Лондон list="tranCitiesList" onblur="autoFillTZ(this.value,'to')"></div>
+    <div class="edit-field"><div class="edit-label">Куда</div><input class="edit-input" id="tranTo" type="text" placeholder="Лондон" list="tranCitiesList" onblur="autoFillTZ(this.value,'to')"></div>
     <div style="display:grid;grid-template-columns:1fr 90px;gap:8px">
       <div class="edit-field"><div class="edit-label">Дата прибытия <span id="tranDuration" style="color:var(--accent);font-size:10px"></span></div><input class="edit-input" id="tranToDate" type="date"></div>
       <div class="edit-field"><div class="edit-label">Время</div><input class="edit-input" id="tranToTime" type="time" oninput="updateTranDuration()"></div>
@@ -610,6 +616,13 @@ body:has(.bag-view-overlay.show) {
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <h3 class="add-modal-title" style="margin-bottom:0">Новый список</h3>
       <button onclick="closeAddSectionForm()" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;padding:0 0 0 8px;line-height:1">✕</button>
+    </div>
+    <div class="edit-field" id="templateField" style="display:none">
+      <div class="edit-label">Шаблон</div>
+      <select class="edit-select" id="sectionTemplate" onchange="applyNewSectionTemplate(this.value)">
+        <option value="">— без шаблона —</option>
+      </select>
+      <div id="templateHint" style="font-size:11px;color:var(--accent);margin-top:4px;min-height:14px"></div>
     </div>
     <div class="edit-field">
       <div class="edit-label">Название</div>
@@ -831,6 +844,9 @@ function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+function escJS(s) {
+  return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/</g,'\\x3c').replace(/>/g,'\\x3e');
+}
 function safeColor(c, fallback) {
   return /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : fallback;
 }
@@ -846,97 +862,95 @@ const sections = [
     icon:'👗', color:'#e06fa0', bg:'#e06fa015',
     title:'Одежда', meta:'',
     items:[
-      { name:'Платье/сарафан лёгкий', qty:'× 3', note:'Хлопок или лён', bag:'hold' },
-      { name:'Футболка', qty:'× 4', bag:'hold' },
-      { name:'Шорты', qty:'× 2', bag:'hold' },
-      { name:'Лёгкие брюки/джинсы', qty:'× 1', note:'На вечер и прохладу', bag:'hold' },
-      { name:'Купальник', qty:'× 2', note:'Один сохнет — второй надет', bag:'hold' },
-      { name:'Пляжная накидка/парео', qty:'× 1', bag:'hold' },
-      { name:'Нижнее бельё', qty:'× 8', note:'~5 дней на цикл стирки + запас', bag:'hold' },
-      { name:'Носки', qty:'× 5 пар', bag:'hold' },
-      { name:'Лёгкая кофта/кардиган', qty:'× 1', note:'Кондиционер в помещениях + пересадка в Стамбуле', bag:'hold' },
-      { name:'Дождевик компактный', qty:'× 1', bag:'hold' },
-      { name:'Пижама', qty:'× 1', bag:'hold' },      
+      { name:'Платье/сарафан лёгкий', qty:'× 3', note:'Хлопок или лён', bag:'' },
+      { name:'Футболка', qty:'× 4', bag:'' },
+      { name:'Шорты', qty:'× 2', bag:'' },
+      { name:'Лёгкие брюки/джинсы', qty:'× 1', note:'На вечер и прохладу', bag:'' },      
+      { name:'Нижнее бельё', qty:'× 8', note:'~5 дней на цикл стирки + запас', bag:'' },
+      { name:'Носки', qty:'× 5 пар', bag:'' },
+      { name:'Лёгкая кофта/кардиган', qty:'× 1', note:'Кондиционер в помещениях + пересадка', bag:'' },
+      { name:'Дождевик компактный', qty:'× 1', bag:'' },
+      { name:'Пижама', qty:'× 1', bag:'' },      
     ]
   },
   {
     icon:'👟', color:'#e06fa0', bg:'#e06fa015',
     title:'Обувь', meta:'',
     items:[
-      { name:'Сандалии/вьетнамки', qty:'× 1 пара', bag:'hold' },
-      { name:'Кроссовки', qty:'× 1 пара', note:'Надеть на себя в самолёт — экономия места', bag:'cabin' },
-      { name:'Коралки пляжные', qty:'× 1 пара', note:'Галечный пляж — обязательно!', bag:'hold' },      
+      { name:'Сандалии/вьетнамки', qty:'× 1 пара', bag:'' },
+      { name:'Кроссовки', qty:'× 1 пара', note:'Надеть на себя в самолёт — экономия места', bag:'' },        
     ]
   },
   {
     icon:'👒', color:'#e06fa0', bg:'#e06fa015',
     title:'Аксессуары', meta:'',
     items:[
-      { name:'Панама/шляпа', qty:'× 1', note:'Надеть на голову — не занимает место', bag:'cabin' },
-      { name:'Солнечные очки', qty:'× 1', bag:'personal' },
-      { name:'Зонт складной', qty:'× 1', bag:'hold' },
+      { name:'Панама/шляпа', qty:'× 1', note:'Надеть на голову — не занимает место', bag:'' },
+      { name:'Солнечные очки', qty:'× 1', bag:'' },
+      { name:'Зонт складной', qty:'× 1', bag:'' },
     ]
   },
   {
     icon:'🏖️', color:'#e8a945', bg:'#e8a94515',
     title:'Пляж', meta:'',
     items:[
-      { name:'Пляжный шелтер/тент', qty:'× 1', note:'40×10 см в сложенном виде — легко в чемодан', bag:'hold' },
-      { name:'Пляжные коврики/подстилка', qty:'× 1–2', note:'Скатать рулоном', bag:'hold' },
-      { name:'Пляжные полотенца', qty:'× 4', note:'Скатать рулонами — на дно чемодана', bag:'hold' },
-      { name:'Сумка-холодильник', qty:'× 1', note:'Сложить плоско в чемодан', bag:'hold' },
-      { name:'Водонепроницаемый чехол для телефона', qty:'× 1', bag:'hold' },
-      { name:'Сухой мешок для мокрых вещей', qty:'× 1–2', bag:'hold' },      
+      { name:'Пляжный шелтер/тент', qty:'× 1', note:'40×10 см в сложенном виде — легко в чемодан', bag:'' },
+      { name:'Пляжные коврики/подстилка', qty:'× 1–2', note:'Скатать рулоном', bag:'' },
+      { name:'Пляжные полотенца', qty:'× 4', note:'Скатать рулонами — на дно чемодана', bag:'' },
+      { name:'Водонепроницаемый чехол для телефона', qty:'× 1', bag:'' },
+      { name:'Сухой мешок для мокрых вещей', qty:'× 1–2', bag:'' },
+      { name:'Купальник', qty:'× 2', note:'', bag:'' },
+      { name:'Пляжная накидка/парео', qty:'× 1', bag:'' },      
     ]
   },
   {
     icon:'🧴', color:'#a78bfa', bg:'#a78bfa15',
     title:'Гигиена и уход', meta:'',
     items:[
-      { name:'Зубная щётка + паста', qty:'× 1', bag:'cabin' },
-      { name:'Шампунь + гель для душа', qty:'× 1', note:'До 100 мл в кабинный, остальное в багаж', bag:'hold' },
-      { name:'Крем SPF 50+', qty:'× 2', note:'2 недели пляжа — 1 флакон 200мл уходит за неделю', bag:'hold' },
-      { name:'Дезодорант', qty:'× 1', bag:'hold' },      
-      { name:'Влажные салфетки', qty:'× 1 пачка', note:'В личную сумку — пересадка в Стамбуле', bag:'personal' },
-      { name:'Расчёска', qty:'× 1', bag:'personal' },
-      { name:'Скинкер/уход для лица', qty:'', note:'Дорожный формат', bag:'cabin' },
+      { name:'Зубная щётка + паста', qty:'× 1', bag:'' },
+      { name:'Шампунь + гель для душа', qty:'× 1', note:'До 100 мл в кабинный, остальное в багаж', bag:'' },
+      { name:'Крем SPF 50+', qty:'× 2', note:'2 недели пляжа — 1 флакон 200мл уходит за неделю', bag:'' },
+      { name:'Дезодорант', qty:'× 1', bag:'' },      
+      { name:'Влажные салфетки', qty:'× 1 пачка', note:'В личную сумку — пересадка в Стамбуле', bag:'' },
+      { name:'Расчёска', qty:'× 1', bag:'' },
+      { name:'Крем для лица', qty:'', note:'Дорожный формат', bag:'' },
     ]
   },
   {
     icon:'💊', color:'#fb923c', bg:'#fb923c15',
     title:'Аптечка', meta:'',
     items:[
-      { name:'Обезболивающее (Ibuprofen/Paracetamol)', qty:'× 1 уп.', bag:'cabin' },
-      { name:'Антигистаминное (Cetirizine)', qty:'× 1 уп.', bag:'cabin' },
-      { name:'Пластыри', qty:'× 1 уп.', bag:'cabin' },
-      { name:'Электролиты/Dioralyte', qty:'× 3–5 пак.', note:'Жара + море', bag:'cabin' },
-      { name:'Средство от укачивания', qty:'× 1 уп.', note:'Кораблик 18 июня', bag:'cabin' },
-      { name:'Imodium / лоперамид', qty:'× 1 уп.', note:'Желудочное расстройство в путешествии', bag:'cabin' },
-      { name:'Антисептик для рук (гель)', qty:'× 1', note:'До 100 мл — в кабинный', bag:'cabin' },
-      { name:'Репеллент от комаров', qty:'× 1', note:'', bag:'hold' },
-      { name:'Пантенол/Bepanthen', qty:'× 1', note:'Солнечный ожог', bag:'hold' },
+      { name:'Обезболивающее (Ibuprofen/Paracetamol)', qty:'× 1 уп.', bag:'' },
+      { name:'Антигистаминное (Cetirizine)', qty:'× 1 уп.', bag:'' },
+      { name:'Пластыри', qty:'× 1 уп.', bag:'' },
+      { name:'Электролиты/Dioralyte', qty:'× 3–5 пак.', note:'Жара + море', bag:'' },
+      { name:'Средство от укачивания', qty:'× 1 уп.', note:'Кораблик 18 июня', bag:'' },
+      { name:'Imodium / лоперамид', qty:'× 1 уп.', note:'Желудочное расстройство в путешествии', bag:'' },
+      { name:'Антисептик для рук (гель)', qty:'× 1', note:'До 100 мл — в кабинный', bag:'' },
+      { name:'Репеллент от комаров', qty:'× 1', note:'', bag:'' },
+      { name:'Пантенол/Bepanthen', qty:'× 1', note:'Солнечный ожог', bag:'' },
     ]
   },
   {
     icon:'📱', color:'#6abf69', bg:'#6abf6915',
     title:'Электроника и зарядки', meta:'',
     items:[
-      { name:'Телефон + зарядка', qty:'× 1', bag:'personal' },
-      { name:'Наушники', qty:'× 1', bag:'personal' },
-      { name:'Переходник для розеток', qty:'× 1', note:'', bag:'hold' },
-      { name:'Пауэрбанк', qty:'× 1', note:'В ручную кладь — в багаж нельзя!', bag:'cabin' },      
+      { name:'Телефон + зарядка', qty:'× 1', bag:'' },
+      { name:'Наушники', qty:'× 1', bag:'' },
+      { name:'Переходник для розеток', qty:'× 1', note:'', bag:'' },
+      { name:'Пауэрбанк', qty:'× 1', note:'В ручную кладь — в багаж нельзя!', bag:'' },      
     ]
   },
   {
     icon:'📄', color:'#fb923c', bg:'#fb923c15',
     title:'Документы и деньги', meta:'',
     items:[
-      { name:'Паспорт', qty:'× 1', bag:'personal' },
-      { name:'Карта банковская', qty:'× 1', bag:'personal' },
-      { name:'Запасная карта или наличные', qty:'', note:'На случай блокировки', bag:'personal' },
-      { name:'Страховой полис (скрин / распечатка)', qty:'× 1', bag:'personal' },
-      { name:'Распечатка брони жилья', qty:'× 1', bag:'personal' },
-      { name:'Маршрут перелёта / посадочные', qty:'× 1', bag:'personal' },
+      { name:'Паспорт', qty:'× 1', bag:'' },
+      { name:'Карта банковская', qty:'× 1', bag:'' },
+      { name:'Запасная карта или наличные', qty:'', note:'На случай блокировки', bag:'' },
+      { name:'Страховой полис (скрин / распечатка)', qty:'× 1', bag:'' },
+      { name:'Распечатка брони жилья', qty:'× 1', bag:'' },
+      { name:'Маршрут перелёта / посадочные', qty:'× 1', bag:'' },
     ]
   },
 ];
@@ -967,7 +981,7 @@ function loadState() {
   } catch(e) { return buildInitialState(); }
 }
 function buildInitialState() {
-  const st = {
+  return {
     sections: [],
     events: [],
     transport: DEFAULT_TRANSPORT.map(s => ({ ...s })),
@@ -975,15 +989,10 @@ function buildInitialState() {
     weather: null,
     bags: null,
   };
-  sections.forEach(s => {
-    st.sections.push({
-      icon: s.icon, bg: s.bg, title: s.title, meta: s.meta, type: s.type || 'items',
-      items: s.items.map(it => ({ id: uid(), name: it.name, qty: it.qty||'', note: it.note||'', bag: it.bag||'', checked: false }))
-    });
-  });
-  return st;
 }
-function persist() { localStorage.setItem('mytrip4', JSON.stringify(state)); }
+function persist() {
+  try { localStorage.setItem('mytrip4', JSON.stringify(state)); } catch(e) {}
+}
 
 window.addEventListener('beforeprint', () => {
   document.querySelectorAll('.section-body:not(.open)').forEach(el => el.classList.add('open', '_print'));
@@ -1069,8 +1078,6 @@ function switchTab(tab) {
   if (tab === 'bags') renderHeaderSub();
   if (tab === 'items') updateStats();
   if (tab === 'tasks') renderTodoSection();
-  const qa = document.getElementById('quick-actions');
-  if (qa && tab !== 'bags' && tab !== 'items' && tab !== 'tasks' && tab !== 'events') qa.style.display = '';
   renderQuickActions(tab);
   localStorage.setItem('activeTab', tab);
 }
@@ -1439,6 +1446,14 @@ function getOrCreateUncategorized() {
   }
   return idx;
 }
+function getOrCreateDefaultTaskSection() {
+  let idx = state.sections.findIndex(s => s.type === 'action' && s.isDefault);
+  if (idx === -1) {
+    state.sections.push({ icon: '✅', bg: '#8e8e9315', title: 'Без списка', meta: '', items: [], type: 'action', isDefault: true });
+    idx = state.sections.length - 1;
+  }
+  return idx;
+}
 
 addFormMode = 'items';
 
@@ -1468,11 +1483,11 @@ function openAddTaskForm(si = null) {
   document.getElementById('addName').placeholder = 'Название задачи';
   document.getElementById('addQtyField').style.display = 'none';
   document.getElementById('addBagField').style.display = 'none';
+  const defaultSi = si !== null ? si : getOrCreateDefaultTaskSection();
   const actionSections = state.sections.map((s, i) => ({ s, i })).filter(({ s }) => s.type === 'action');
   const sel = document.getElementById('addSection');
   sel.innerHTML = actionSections.map(({ s, i }) => `<option value="${i}">${esc(s.icon)} ${esc(s.title)}</option>`).join('');
-  if (si !== null) sel.value = si;
-  else if (actionSections.length > 0) sel.value = actionSections[0].i;
+  sel.value = String(defaultSi);
   document.getElementById('addName').value = '';
   document.getElementById('addNote').value = '';
   document.getElementById('addOverlay').classList.add('show');
@@ -1566,7 +1581,7 @@ function renderStatView() {
     );
     if (!items.length) return;
     total += items.length;
-    html += `<div class="bv-section-title"><span>${s.icon} ${esc(s.title)}</span><span class="bv-count">${items.length}</span></div>`;
+    html += `<div class="bv-section-title"><span>${esc(s.icon)} ${esc(s.title)}</span><span class="bv-count">${items.length}</span></div>`;
     items.forEach(item => {
       html += `<div class="bv-item" onclick="toggleStatItem(${si},'${item.id}')">
         <div class="checkbox" style="${item.checked ? 'background:var(--accent);border-color:var(--accent)' : ''}"><span class="checkmark" style="${item.checked ? 'display:block' : ''}">✓</span></div>
@@ -1623,10 +1638,6 @@ function renderHeaderSub() {
   document.getElementById('ob-cities').style.display    = showAll ? '' : 'none';
   document.getElementById('ob-transport').style.display = showAll ? '' : 'none';
   document.getElementById('ob-bags').style.display      = (showAll || showBags) ? '' : 'none';
-
-  const qa = document.getElementById('quick-actions');
-  if (qa && document.getElementById('tab-bags')?.classList.contains('active'))
-    qa.style.display = (hasTransport || hasBags) ? '' : 'none';
 
   el.style.display = hasCities ? '' : 'none';
   if (!hasCities) return;
@@ -1708,9 +1719,9 @@ function renderTripCitiesTags() {
     const rowBg = !invalid && overlappingCities.has(c) ? 'background:rgba(91,156,246,0.08);border-radius:6px;' : '';
     return `<div class="trip-city-row" style="${rowBg}">
       <div class="trip-city-row-name">${esc(c)}</div>
-      <input class="trip-date-input" type="date" value="${d.start || fallbackStart}" onchange="updateCityDate('${c}','start',this.value)" title="Начало" style="${startBg}">
+      <input class="trip-date-input" type="date" value="${d.start || fallbackStart}" onchange="updateCityDate('${escJS(c)}','start',this.value)" title="Начало" style="${startBg}">
       <span style="color:var(--text3);font-size:11px">–</span>
-      <input class="trip-date-input" type="date" value="${d.end || fallbackEnd}" onchange="updateCityDate('${c}','end',this.value)" title="Конец">
+      <input class="trip-date-input" type="date" value="${d.end || fallbackEnd}" onchange="updateCityDate('${escJS(c)}','end',this.value)" title="Конец">
       <button class="trip-city-del" onclick="removeTripCity(${i})">×</button>
     </div>`;
   }).join('');
@@ -1971,7 +1982,7 @@ function renderTZList(query) {
         return TZ_DATA.find(t => t.city.toLowerCase() === q2 || t.city.toLowerCase().includes(q2) || q2.includes(t.city.toLowerCase()));
       }).filter(Boolean);
       if (destMatches.length) {
-        html += addGroup(`📍 Маршрут · ${tripCities.join(' · ')}`);
+        html += addGroup(`📍 Маршрут · ${tripCities.map(c => esc(c)).join(' · ')}`);
         destMatches.forEach(t => html += addItem(t));
       }
     }
@@ -2145,11 +2156,13 @@ function saveFlightEdit() {
   else state.transport[flightEditIdx] = seg;
   sortTransport();
   persist(); closeFlightEdit(); renderTransportBar(); renderHeaderSub();
+  if (document.getElementById('tab-bags')?.classList.contains('active')) renderQuickActions('bags');
 }
 function deleteFlight() {
   if (flightEditIdx === null || flightEditIdx === -1) return;
   state.transport.splice(flightEditIdx, 1);
   persist(); closeFlightEdit(); renderTransportBar(); renderHeaderSub();
+  if (document.getElementById('tab-bags')?.classList.contains('active')) renderQuickActions('bags');
 }
 document.getElementById('flightEditOverlay').addEventListener('click', e => {
   if (e.target === document.getElementById('flightEditOverlay')) closeFlightEdit();
@@ -2452,7 +2465,7 @@ function renderBagView() {
   state.sections.forEach((s, si) => {
     const items = s.items.filter(it => it.bag === bagViewType);
     if (!items.length) return;
-    html += `<div class="bv-section-title"><span>${s.icon} ${esc(s.title)}</span><span class="bv-count">${items.length}</span></div>`;
+    html += `<div class="bv-section-title"><span>${esc(s.icon)} ${esc(s.title)}</span><span class="bv-count">${items.length}</span></div>`;
     items.forEach(item => {
       total++;
       if (item.checked) checked++;
@@ -2499,9 +2512,11 @@ selEmoji = '📦';
 selColorIdx = 0;
 editingSectionIdx = null;
 pendingSectionType = 'items';
+let selectedTemplateIdx = -1;
 
 function openAddSectionForm(type = 'items') {
   editingSectionIdx = null;
+  selectedTemplateIdx = -1;
   const isAction = type === 'action';
   selEmoji = isAction ? '✅' : '📦'; selColorIdx = 0;
   document.getElementById('sectionIcon').value = '';
@@ -2514,6 +2529,15 @@ function openAddSectionForm(type = 'items') {
   pendingSectionType = type;
   const defType = document.querySelector(`input[name="sectionType"][value="${type}"]`);
   if (defType) defType.checked = true;
+  const templateField = document.getElementById('templateField');
+  if (templateField) {
+    templateField.style.display = isAction ? 'none' : '';
+    const sel = document.getElementById('sectionTemplate');
+    sel.innerHTML = '<option value="">— без шаблона —</option>' +
+      sections.map((s, i) => `<option value="${i}">${s.icon} ${esc(s.title)}</option>`).join('');
+    sel.value = '';
+    document.getElementById('templateHint').textContent = '';
+  }
   document.getElementById('addSectionOverlay').classList.add('show');
   setTimeout(() => document.getElementById('sectionTitle').focus(), 50);
 }
@@ -2522,19 +2546,37 @@ function openEditSectionForm(si) {
   const s = state.sections[si];
   if (!s) return;
   editingSectionIdx = si;
+  selectedTemplateIdx = -1;
   selEmoji = s.icon || '📦';
-  // Find closest color
   selColorIdx = COLOR_LIST.findIndex(c => c.bg === s.bg) ?? 0;
   if (selColorIdx < 0) selColorIdx = 0;
   document.getElementById('sectionIcon').value = '';
   document.getElementById('sectionTitle').value = s.title || '';
   document.getElementById('emojiSelect').value = s.icon || '';
   document.getElementById('sectionIcon').style.display = s.icon ? 'none' : '';
+  document.getElementById('templateField').style.display = 'none';
   document.querySelector('.add-modal-title').textContent = 'Редактировать список';
   document.querySelector('[onclick="submitAddSectionForm()"]').textContent = 'Сохранить';
   document.getElementById('sectionDelBtn').style.display = '';
   document.getElementById('addSectionOverlay').classList.add('show');
   setTimeout(() => document.getElementById('sectionTitle').focus(), 50);
+}
+
+function applyNewSectionTemplate(value) {
+  selectedTemplateIdx = value === '' ? -1 : parseInt(value, 10);
+  const hint = document.getElementById('templateHint');
+  if (selectedTemplateIdx < 0) {
+    hint.textContent = '';
+    return;
+  }
+  const tpl = sections[selectedTemplateIdx];
+  document.getElementById('sectionTitle').value = tpl.title;
+  selEmoji = tpl.icon;
+  document.getElementById('emojiSelect').value = tpl.icon;
+  document.getElementById('sectionIcon').value = '';
+  document.getElementById('sectionIcon').style.display = 'none';
+  hint.textContent = `${tpl.items.length} вещей будет добавлено`;
+  updateSectionPreview();
 }
 function closeAddSectionForm() {
   document.getElementById('addSectionOverlay').classList.remove('show');
@@ -2593,15 +2635,19 @@ function submitAddSectionForm() {
   }
   const randomC = COLOR_LIST[Math.floor(Math.random() * COLOR_LIST.length)];
   const existingC = editingSectionIdx !== null ? COLOR_LIST.find(c => c.bg === state.sections[editingSectionIdx].bg) || randomC : null;
-  const c = editingSectionIdx !== null ? (existingC || randomC) : randomC;
+  const tpl = selectedTemplateIdx >= 0 ? sections[selectedTemplateIdx] : null;
+  const bg = editingSectionIdx !== null ? (existingC || randomC).bg : (tpl ? tpl.bg : randomC.bg);
   if (editingSectionIdx !== null) {
     const s = state.sections[editingSectionIdx];
     s.icon  = icon;
-    s.bg    = c.bg;
+    s.bg    = bg;
     s.title = title;
   } else {
     const sType = pendingSectionType || 'items';
-    state.sections.push({ icon, bg: c.bg, title, meta: '', items: [], type: sType });
+    const items = tpl
+      ? tpl.items.map(it => ({ id: uid(), name: it.name, qty: it.qty||'', note: it.note||'', bag: it.bag||'', checked: false }))
+      : [];
+    state.sections.push({ icon, bg, title, meta: '', items, type: sType });
     const newSi = state.sections.length - 1;
     openSections.add(newSi);
     persist(); closeAddSectionForm(); render();
@@ -2641,13 +2687,10 @@ function updateStats() {
     total++; if (i.checked) checked++;
     if (i.bag && bt.hasOwnProperty(i.bag)) { bt[i.bag]++; if (i.checked) bc[i.bag]++; }
   }));
-  const hasItems = state.sections.some(s => s.type !== 'action');
+  const hasItems = state.sections.some(s => s.type !== 'action' && !(s.isDefault && s.items.length === 0));
   document.getElementById('items-stats').style.display = hasItems ? '' : 'none';
   document.getElementById('items-reset').style.display = hasItems ? '' : 'none';
   document.getElementById('items-onboarding').style.display = hasItems ? 'none' : '';
-  const qaItems = document.getElementById('quick-actions');
-  if (qaItems && document.getElementById('tab-items')?.classList.contains('active'))
-    qaItems.style.display = hasItems ? '' : 'none';
   document.getElementById('total-count').textContent = total;
   document.getElementById('checked-count').textContent = checked;
   document.getElementById('left-count').textContent = total - checked;
@@ -2671,9 +2714,6 @@ function renderTodoSection() {
   todoContainer.innerHTML = '';
   const hasTasks = state.sections.some(s => s.type === 'action');
   document.getElementById('tasks-onboarding').style.display = hasTasks ? 'none' : '';
-  const qaTasks = document.getElementById('quick-actions');
-  if (qaTasks && document.getElementById('tab-tasks')?.classList.contains('active'))
-    qaTasks.style.display = hasTasks ? '' : 'none';
   state.sections.forEach((s, si) => {
     if (s.type !== 'action') return;
     const isOpen = openSections.has(si);
@@ -2829,10 +2869,11 @@ function renderEvents() {
   });
   const hasEvents = events.length > 0;
   document.getElementById('events-onboarding').style.display = hasEvents ? 'none' : '';
-  const qaEvents = document.getElementById('quick-actions');
-  if (qaEvents && document.getElementById('tab-events')?.classList.contains('active'))
-    qaEvents.style.display = hasEvents ? '' : 'none';
-  if (!hasEvents) { c.innerHTML = ''; return; }
+  if (!hasEvents) {
+    c.innerHTML = '';
+    if (document.getElementById('tab-events')?.classList.contains('active')) renderQuickActions('events');
+    return;
+  }
   let html = '';
   let lastDay = '';
   const days = ['вс','пн','вт','ср','чт','пт','сб'];
@@ -2847,7 +2888,7 @@ function renderEvents() {
       }
       html += `<div class="event-day">${label || 'Без даты'}</div>`;
     }
-    html += `<div class="event-card" onclick="openEventForm('${ev.id}')">
+    html += `<div class="event-card" onclick="openEventForm('${escJS(ev.id)}')">
       <div class="event-time-col">
         <div class="event-time">${ev.time || '—'}</div>        
       </div>
@@ -2907,21 +2948,48 @@ function renderQuickActions(tab) {
   if (!box) return;
 
   const actions = quickActions[tab] || [];
-
   box.innerHTML = actions
     .map((a, i) => ({ a, i }))
     .filter(({ a }) => !a.visible || a.visible())
-    .map(({ a, i }) => `
-    <button class="qa-btn ${a.className || ''}" onclick="runQuickAction('${tab}', ${i})">
-      ${esc(a.label)}
-    </button>
-  `).join('');
+    .map(({ a, i }) => `<button class="qa-btn ${a.className || ''}" onclick="runQuickAction('${tab}', ${i})">${esc(a.label)}</button>`)
+    .join('');
+
+  if (tab === 'tasks') {
+    box.style.display = state.sections.some(s => s.type === 'action') ? '' : 'none';
+  } else if (tab === 'bags') {
+    const hasTransport = state.transport && state.transport.length > 0;
+    const hasBags = state.bags && Object.keys(state.bags).some(k => !state.bags[k].deleted);
+    const hasCities = state.trip && state.trip.cities && state.trip.cities.filter(Boolean).length > 0;
+    box.style.display = (hasTransport || hasBags || hasCities) ? '' : 'none';
+  } else if (tab === 'items') {
+    box.style.display = state.sections.some(s => s.type !== 'action' && !(s.isDefault && s.items.length === 0)) ? '' : 'none';
+  } else if (tab === 'events') {
+    box.style.display = state.events && state.events.length > 0 ? '' : 'none';
+  } else {
+    box.style.display = '';
+  }
 }
 
 function runQuickAction(tab, index) {
   const action = quickActions[tab]?.[index]?.action;
   if (action) action();
 }
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return;
+  if (document.querySelector('.edit-overlay.show, .add-overlay.show, .add-section-overlay.show, .bag-view-overlay.show')) return;
+  const saved = JSON.parse(localStorage.getItem('mytrip4') || 'null');
+  if (saved && JSON.stringify(saved) !== JSON.stringify(state)) {
+    state = loadState();
+    render();
+    renderTransportBar();
+    renderLuggageBar();
+    renderHeaderSub();
+    if (document.getElementById('tab-events')?.classList.contains('active')) renderEvents();
+    const activeTab = ['items','tasks','bags','events'].find(t => document.getElementById('tab-'+t)?.classList.contains('active'));
+    if (activeTab) renderQuickActions(activeTab);
+  }
+});
 
 </script>
 <datalist id="tranCitiesList"></datalist>
